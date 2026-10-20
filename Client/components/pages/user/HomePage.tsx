@@ -1,5 +1,5 @@
 import { ArrowRight, MapPin, Star } from 'lucide-react';
-import Link from 'next/link'; // Chuyển từ react-router-dom sang next/link
+import Link from 'next/link';
 import  TourCard, { formatTourPrice, type Tour } from '@/components/common/TourCard'; 
 import './HomePage.css';
 
@@ -12,27 +12,21 @@ type ReviewHighlight = {
     tour?: { id: string; title: string; destination?: string | null; images: string[] } | null;
 };
 
-// Sử dụng biến môi trường, fallback về localhost khi dev
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3600';
 
-// Hàm fetch data chạy trên Server (Không cần AbortController vì Server xử lý trực tiếp)
 async function getCollection<T>(path: string): Promise<T[]> {
     try {
-        // Thêm { cache: 'no-store' } nếu dữ liệu thay đổi liên tục, 
-        // hoặc { next: { revalidate: 3600 } } để cache 1 tiếng
         const response = await fetch(`${API_URL}${path}`, { cache: 'no-store' });
         if (!response.ok) throw new Error('Failed to fetch data');
         const data = await response.json();
         return data.tours ?? data.reviews ?? [];
     } catch (error) {
         console.error(error);
-        return []; // Trả về mảng rỗng nếu lỗi để không làm sập trang
+        return [];
     }
 }
 
-// Chuyển thành Async Component
 export default async function HomePage() {
-    // Gọi API song song ngay trên Server
     const [featured, trending, promotions, reviews] = await Promise.all([
         getCollection<Tour>('/api/tours/featured?limit=1'),
         getCollection<Tour>('/api/tours/trending?limit=3'),
@@ -43,7 +37,6 @@ export default async function HomePage() {
     const heroTour = featured[0];
     const heroImage = heroTour?.images?.[0] || 'https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?q=80&w=1920&auto=format&fit=crop';
 
-    // Không còn state isLoading vì giao diện chỉ render khi dữ liệu đã tải xong
     return (
         <div className="w-full pb-20">
             <section className="home-hero" style={{ backgroundImage: `linear-gradient(90deg,rgba(0,0,0,.46),rgba(0,0,0,.04)),url("${heroImage}")` }}>

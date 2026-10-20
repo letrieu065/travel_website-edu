@@ -24,3 +24,44 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@layer components {
+
+    /* Layout Tổng tối giản, nền trắng */
+    .layout-container {
+        @apply min-h-screen w-full bg-white text-gray-900 flex flex-col font-sans overflow-x-hidden;
+    }
+
+    /* Header phẳng, không đổ bóng, không làm mờ */
+    .header-nav {
+        @apply sticky top-0 z-50 flex items-center justify-between px-6 py-5 bg-white border-b border-gray-200 w-full;
+    }
+
+    /* Logo chữ đậm, không hiệu ứng xoay */
+    .nav-logo {
+        @apply flex items-center gap-2 text-2xl font-black tracking-tighter text-black uppercase;
+    }
+
+    /* Links căn giữa, chữ in hoa, khoảng cách rộng */
+    .nav-links {
+        @apply hidden md:flex items-center gap-8 text-sm font-bold text-gray-800 tracking-wider uppercase;
+    }
+
+    .nav-link-item {
+        @apply hover:text-gray-500 transition-colors cursor-pointer;
+    }
+
+    /* Cụm chức năng (Đăng nhập, Giỏ hàng...) */
+    .auth-actions {
+        @apply flex items-center gap-6 text-sm font-bold uppercase tracking-wide text-gray-900;
+    }
+
+    .btn-icon-only {
+        @apply hover:text-gray-500 transition-colors flex items-center gap-2 cursor-pointer;
+    }
+
+    /* Phần chứa nội dung */
+    .content-main {
+        @apply flex-1 w-full;
+    }
+}
