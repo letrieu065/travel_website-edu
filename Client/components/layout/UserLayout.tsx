@@ -1,8 +1,8 @@
-'use client'; // BẮT BUỘC: Vì file này dùng state, effect, localStorage và Redux
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link'; // Đổi từ react-router-dom
-import { useRouter } from 'next/navigation'; // Thay thế useNavigate
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, ShoppingCart, User, LogOut, Info, ChevronDown } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { setProfile, clearProfile } from '@/redux/userSlice'; 
@@ -60,7 +60,7 @@ export const UserLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         setLocalUser(null);
         dispatch(clearProfile()); 
         setIsDropdownOpen(false);
-        router.push('/login'); // Cập nhật cú pháp chuyển trang
+        router.push('/login');
     };
 
     const displayName = localUser?.fullName || localUser?.name || 'User';
@@ -77,7 +77,7 @@ export const UserLayout: React.FC<{ children: React.ReactNode }> = ({ children }
                     <Link href="/flights" className="nav-link-item">Destinations</Link>
                     <Link href="/tours" className="nav-link-item">Tours</Link>
                     <Link href="/hotels" className="nav-link-item">Hotels</Link>
-                    <Link href="/about" className="nav-link-item">About Us</Link>
+                    <Link href="/about-us" className="nav-link-item">About Us</Link>
                 </nav>
 
                 <div className="auth-actions">
