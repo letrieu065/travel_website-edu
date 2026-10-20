@@ -1,0 +1,82 @@
+/* AuthStyles.css */
+@import "tailwindcss";
+
+@layer components {
+
+    /* Khung bao ngoài full màn hình, nền trắng */
+    .auth-container {
+        @apply min-h-screen w-full bg-white flex flex-col md:flex-row font-sans text-gray-900;
+    }
+
+    /* Bên chứa biểu mẫu: Trắng, thoáng, tập trung vào nội dung */
+    .auth-form-side {
+        @apply w-full md:w-1/2 p-8 md:p-20 flex flex-col justify-center relative bg-white;
+        animation: fadeIn 0.6s ease-out forwards;
+    }
+
+    /* Bên chứa ảnh: Tràn viền, tĩnh, không bo góc */
+    .auth-img-side {
+        @apply hidden md:block md:w-1/2 relative bg-gray-100 overflow-hidden;
+    }
+
+    .auth-img {
+        @apply w-full h-full object-cover;
+    }
+
+    /* Nút quay lại tối giản */
+    .auth-back-btn {
+        @apply absolute top-8 left-8 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-900 hover:text-gray-500 transition-colors z-20;
+    }
+
+    /* Switch Login/Register dạng Tab phẳng */
+    .auth-toggle-nav {
+        @apply flex gap-6 mb-12 border-b border-gray-100 w-fit;
+    }
+
+    .toggle-link {
+        @apply pb-2 text-xs font-black uppercase tracking-widest text-gray-400 transition-all border-b-2 border-transparent;
+    }
+
+    .toggle-link-active {
+        @apply text-gray-900 border-black;
+    }
+
+    /* Form Inputs: Chỉ có đường kẻ dưới hoặc viền mỏng, không bóng đổ */
+    .auth-input-group {
+        @apply flex flex-col gap-1 mb-6;
+    }
+
+    .auth-input-label {
+        @apply text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2;
+    }
+
+    .auth-input-field {
+        @apply w-full px-0 py-3 bg-transparent border-b-2 border-gray-100 outline-none focus:border-black transition-colors text-gray-900 font-medium placeholder-gray-300;
+    }
+
+    /* Nút bấm chính: Khối đen đặc, chữ trắng in hoa */
+    .auth-primary-btn {
+        @apply w-full py-4 bg-gray-900 text-white font-black uppercase tracking-[0.2em] text-xs hover:bg-gray-700 transition-all mt-4 cursor-pointer;
+    }
+
+    /* Social Buttons: Viền mảnh */
+    .auth-social-row {
+        @apply flex gap-3 mt-8;
+    }
+
+    .auth-social-btn {
+        @apply flex-1 flex items-center justify-center py-3 border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
