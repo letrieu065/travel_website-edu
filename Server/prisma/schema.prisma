@@ -1,0 +1,187 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model booking_items {
+  booking_id String    @db.Uuid
+  item_type  String    @db.VarChar
+  quantity   Int
+  unit_price Decimal   @db.Decimal
+  check_in   DateTime? @db.Date
+  check_out  DateTime? @db.Date
+  item_id    String    @db.Uuid
+  bookings   bookings  @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([booking_id, item_type, item_id])
+  @@index([booking_id])
+  @@index([item_type, item_id], map: "idx_booking_items_item")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model bookings {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String?         @db.Uuid
+  total_price   Decimal         @db.Decimal(12, 2)
+  created_at    DateTime?       @default(now()) @db.Timestamptz(6)
+  booking_items booking_items[]
+  users         users?          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  payments      payments[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model flights {
+  id                String    @id(map: "flight_schedules_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  plane_id          String    @db.Uuid
+  departure_time    DateTime  @db.Timestamptz(6)
+  arrival_time      DateTime  @db.Timestamptz(6)
+  ticket_price      Decimal   @db.Decimal
+  available_seats   Int
+  departure_airport String    @db.VarChar
+  arrival_airport   String    @db.VarChar
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+  planes            planes    @relation(fields: [plane_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "flight_schedules_flight_id_fkey")
+
+  @@unique([plane_id, departure_time], map: "flight_schedules_flight_time_key")
+  @@index([plane_id], map: "flight_schedules_flight_id_idx")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model hotel_images {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hotel_id   String    @db.Uuid
+  url        String
+  sort_order Int       @default(0)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  hotels     hotels    @relation(fields: [hotel_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([hotel_id], map: "idx_hotel_images_hotel_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model hotels {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String         @db.VarChar(255)
+  description     String?
+  city            String         @db.VarChar(100)
+  address         String         @db.VarChar(255)
+  star_rating     Int?
+  price_per_night Decimal        @db.Decimal(12, 2)
+  discount_price  Decimal?       @db.Decimal(12, 2)
+  amenities       String[]
+  available_rooms Int
+  is_trending     Boolean?       @default(false)
+  created_at      DateTime?      @default(now()) @db.Timestamptz(6)
+  hotel_images    hotel_images[]
+
+  @@index([city, star_rating], map: "idx_hotels_search")
+  @@index([is_trending], map: "idx_hotels_trending", where: raw("(is_trending = true)"))
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model payments {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id     String?   @db.Uuid
+  amount         Decimal   @db.Decimal(12, 2)
+  payment_method String    @db.VarChar(50)
+  transaction_id String?   @unique @db.VarChar(255)
+  payment_status String?   @default("pending") @db.VarChar(20)
+  payment_date   DateTime? @db.Timestamptz(6)
+  bookings       bookings? @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model planes {
+  id           String    @id(map: "flights_pkey") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  airline      String    @db.VarChar(100)
+  plane_number String    @unique @db.VarChar(20)
+  total_seats  Int
+  flights      flights[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model reviews {
+  user_id    String    @db.Uuid
+  rating     Int
+  comment    String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  item_id    String    @db.Uuid
+  item_type  String    @db.VarChar(50)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, item_id, item_type])
+  @@index([item_id], map: "reviews_hotel_id_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tour_departures {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tour_id         String   @db.Uuid
+  start_date      DateTime @db.Date
+  price           Decimal  @db.Decimal
+  discount_price  Decimal? @db.Decimal
+  available_seats Int
+  tours           tours    @relation(fields: [tour_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tour_id, start_date], map: "tour_departures_tour_date_key")
+  @@index([tour_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tour_images {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tour_id    String    @db.Uuid
+  url        String
+  sort_order Int       @default(0)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  tours      tours     @relation(fields: [tour_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([tour_id], map: "idx_tour_images_tour_id")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tours {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title              String            @db.VarChar(255)
+  description        String?
+  tour_type          String            @db.VarChar(50)
+  duration           String?           @db.VarChar(50)
+  departure_location String?           @db.VarChar(100)
+  destination        String?           @db.VarChar(100)
+  is_trending        Boolean?          @default(false)
+  created_at         DateTime?         @default(now()) @db.Timestamptz(6)
+  destinations       String?
+  food_include       String?
+  ideal_time         String?
+  vehicle            String?
+  tour_departures    tour_departures[]
+  tour_images        tour_images[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String     @unique @db.VarChar(255)
+  password_hash String?    @db.VarChar(255)
+  full_name     String     @db.VarChar(100)
+  phone_number  String?    @db.VarChar(15)
+  avatar_url    String?
+  auth_provider String?    @default("local") @db.VarChar(20)
+  role          String?    @default("user") @db.VarChar(20)
+  created_at    DateTime?  @default(now()) @db.Timestamptz(6)
+  google_id     String?    @unique(map: "users_googleId_key")
+  facebook_id   String?    @unique(map: "users_facebookId_key")
+  bookings      bookings[]
+  reviews       reviews[]
+}

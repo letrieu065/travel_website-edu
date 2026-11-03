@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
-import FacebookLoginModule from 'react-facebook-login/dist/facebook-login-render-props';
 
-const FacebookLogin = (FacebookLoginModule as any).default || FacebookLoginModule;
 import './AuthForm.css';
 
 export const LoginPage: React.FC = () => {
@@ -166,22 +164,6 @@ export const LoginPage: React.FC = () => {
                         >
                             Google
                         </button>
-
-                        <FacebookLogin
-                            appId="1765005624538226"
-                            autoLoad={false}
-                            fields="name,email"
-                            callback={handleFacebookResponse}
-                            render={(renderProps: any) => (
-                                <button
-                                    type="button"
-                                    onClick={renderProps.onClick}
-                                    className="flex-1 border border-gray-200 py-3 text-xs font-bold hover:border-black transition-colors rounded"
-                                >
-                                    Facebook
-                                </button>
-                            )}
-                        />
                     </div>
                 </div>
             </div>
