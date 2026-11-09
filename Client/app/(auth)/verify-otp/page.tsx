@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+'use client';
 
-const VerifyOtp: React.FC = () => {
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+function VerifyOtp() {
     const [otp, setOtp] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const navigate = useNavigate();
-    const location = useLocation();
+    const router = useRouter();
+    const [email, setEmail] = useState<string | null>(null);
 
-    // Lấy email từ state truyền sang từ trang Quên mật khẩu
-    const email = location.state?.email;
+    const savedEmail = sessionStorage.getItem('resetEmail');
 
     const handleVerifyOtp = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -17,9 +20,9 @@ const VerifyOtp: React.FC = () => {
         const tempToken = localStorage.getItem('tempToken');
 
         // 2. Kiểm tra xem có đủ dữ liệu không
-        if (!tempToken || !email) {
+        if (!tempToken || !savedEmail) {
             alert('Phiên làm việc không hợp lệ hoặc thiếu email. Vui lòng thực hiện lại từ đầu.');
-            navigate('/forgot-password');
+            router.push('/forgot-password');
             return;
         }
 
@@ -27,13 +30,13 @@ const VerifyOtp: React.FC = () => {
 
         try {
             // 3. Gọi API với email, otp và tempToken trong body
-            const response = await fetch('http://localhost:3600/api/auth/verify-otp', {
+            const response = await fetch(`${API_URL}/api/v1/auth/verify-otp`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    email,
+                    savedEmail,
                     otp,
                     tempToken
                 }),
@@ -47,10 +50,11 @@ const VerifyOtp: React.FC = () => {
 
                 // Tùy chọn: Xóa tempToken nếu bước tiếp theo (Đổi mật khẩu) không cần dùng đến nữa, 
                 // hoặc giữ lại và truyền sang trang đặt lại mật khẩu để API đổi mật khẩu biết bạn đã xác thực.
-                // localStorage.removeItem('tempToken'); 
+                localStorage.removeItem('tempToken'); 
 
                 // Chuyển hướng sang trang đặt lại mật khẩu mới, truyền theo email và token (nếu cần)
-                navigate('/reset-password-final', { state: { email, tempToken } });
+                //navigate('/reset-password-final', { state: { email, tempToken } });
+                router.push('reset-password-final')
             } else {
                 // Hiển thị thông báo lỗi từ backend (ví dụ: "Mã OTP đã hết hạn", "Mã OTP không chính xác")
                 alert(data.message || 'Xác thực thất bại!');
@@ -68,16 +72,6 @@ const VerifyOtp: React.FC = () => {
             <div className="bg-white w-full max-w-lg p-10 rounded-xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-gray-100">
 
                 {/* Back Button */}
-                <button
-                    onClick={() => navigate(-1)}
-                    className="flex items-center text-sm font-bold text-gray-900 tracking-wider mb-12 hover:text-gray-600 transition-colors"
-                >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    BACK TO PREVIOUS
-                </button>
-
                 <div className="pl-2">
                     {/* Headers */}
                     <div className="mb-8">

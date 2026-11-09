@@ -74,8 +74,7 @@ const register = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Email này đã được đăng ký trước đó!' });
     }
 
-    const saltRounds = 10;
-    const password_hash = await bcrypt.hash(password, saltRounds);
+    const password_hash = await bcrypt.hash(password, 10);
 
     const newUser = await prisma.users.create({
       data: {
@@ -133,9 +132,10 @@ const forgetPass = async (req: Request, res: Response) => {
     }
 
     const otpCode = generateOTP(6);
+    const otpHash = await bcrypt.hash(otpCode, 10);
     const secret = process.env.JWT_SECRET || 'default_secret';
     const tempToken = jwt.sign(
-      { email, otp: otpCode },
+      { email, otpHash },
       secret,
       { expiresIn: '5m' }
     );
@@ -170,8 +170,13 @@ const verifyOTP = async (req: any, res: Response) => {
       return res.status(400).json({ message: 'Mã OTP đã hết hạn hoặc không hợp lệ!' });
     }
 
+    const { email: decodedEmail, otpHash } = decoded;
     // Kiểm tra xem email và mã OTP có khớp không
-    if (decoded.email !== email || decoded.otp !== otp) {
+    if (decodedEmail !== email) {
+      return res.status(403).json({ message: 'Yêu cầu không hợp lệ!' });
+    }
+
+    if (!(await bcrypt.compare(otp.toString(), otpHash))) {
       return res.status(400).json({ message: 'Mã OTP không chính xác!' });
     }
 
