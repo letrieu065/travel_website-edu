@@ -1,0 +1,4 @@
+Kiểm tra các hàm không có thân hàm trong file và tự động bổ sung thân hàm
+Nếu cần thêm hàm mới để tối ưu code thì khi viết xong phải ghi comment đầu mỗi hàm với nội dung (Đã thêm)
+Không được sửa các file không được yêu cầu, nếu càn thiết, hãy thông báo trước khi thực hiện
+Sau khi viết xong các method thì test lại cho đúng logic, nếu phát hiện lỗi, hãy sửa lại và thông báo

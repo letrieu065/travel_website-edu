@@ -500,3 +500,5 @@ MigrationBackup/
 .agents/
 .claude/
 .windsurf/
+
+.DS_Store
