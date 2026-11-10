@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 
 import authRoute from './features/auth/auth.route';
+import adminRoute from './features/admin/admin.route';
 // import userRoute from './features/users/user.route';
 
 const app: Express = express();
@@ -14,6 +15,7 @@ app.use(express.json()); // Parse body JSON
 
 // 2. Gắn kết các Routes (API Endpoints)
 app.use('/api/v1/auth', authRoute);
+app.use('/api/v1/admin', adminRoute);
 // app.use('/api/v1/users', userRoute);
 
 // Một route cơ bản để kiểm tra "sức khỏe" của server
