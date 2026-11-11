@@ -70,6 +70,7 @@ export default function AboutUsPage() {
                 <h2 className="text-4xl md:text-6xl font-black text-black uppercase tracking-tighter mb-6">Ready to write <br /> your next chapter?</h2>
                 <p className="text-gray-900 font-medium mb-10 max-w-lg mx-auto">The world is vast, and your next great adventure awaits. Let us be your compass.</p>
                 <button
+                    type="button"
                     onClick={() => router.push('/tours')}
                     className="mx-auto px-10 py-4 bg-black hover:bg-gray-800 text-white font-black uppercase tracking-[0.2em] text-xs transition-colors flex items-center gap-3 cursor-pointer"
                 >

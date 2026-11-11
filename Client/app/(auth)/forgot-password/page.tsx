@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3600';
 
-export default function ForgotPasswordPage () {
+export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
@@ -46,14 +46,18 @@ export default function ForgotPasswordPage () {
     return (
         <div className="auth-container justify-center items-center">
             <div className="auth-form-side w-full md:max-w-2xl items-center border border-gray-100 rounded-xl shadow-sm">
-                <button onClick={() => router.push('/login')} className="auth-back-btn">
+                <button type="button" onClick={() => router.push('/login')} className="auth-back-btn">
                     <ArrowLeft className="w-4 h-4" /> Back to Login
                 </button>
 
                 <div className="max-w-sm w-full mt-10">
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-4 block">Security</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-4 block">
+                        Security
+                    </span>
                     <h2 className="text-4xl font-black uppercase tracking-tighter mb-4">Reset Password</h2>
-                    <p className="text-gray-500 text-sm mb-10">Enter your email and we'll send you a verification code.</p>
+                    <p className="text-gray-500 text-sm mb-10">
+                        Enter your email and we&apos;ll send you a verification code.
+                    </p>
 
                     <form className="space-y-8" onSubmit={handleForgotPassword}>
                         <div className="auth-input-group">
@@ -76,4 +80,4 @@ export default function ForgotPasswordPage () {
             </div>
         </div>
     );
-};
+}

@@ -1,19 +1,23 @@
+'use client';
+
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import './AuthForm.css';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3600';
 
 export const ForgotPasswordPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const navigate = useNavigate();
+    const router = useRouter();
 
     const handleForgotPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
         try {
-            const response = await fetch('http://localhost:3600/api/auth/forget', {
+            const response = await fetch(`${API_URL}/api/v1/auth/forget`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
@@ -25,10 +29,9 @@ export const ForgotPasswordPage: React.FC = () => {
                 if (data.tempToken) {
                     localStorage.setItem('tempToken', data.tempToken);
                 }
-
+                sessionStorage.setItem('resetEmail', email);
                 alert('Mã OTP đã được gửi về email của bạn! Vui lòng kiểm tra hộp thư.');
-
-                navigate('/verify-otp', { state: { email } });
+                router.push('/verify-otp');
             } else {
                 alert(data.message || 'Không thể gửi yêu cầu!');
             }
@@ -43,14 +46,18 @@ export const ForgotPasswordPage: React.FC = () => {
     return (
         <div className="auth-container justify-center items-center">
             <div className="auth-form-side w-full md:max-w-2xl items-center border border-gray-100 rounded-xl shadow-sm">
-                <button onClick={() => navigate('/login')} className="auth-back-btn">
+                <button type="button" onClick={() => router.push('/login')} className="auth-back-btn">
                     <ArrowLeft className="w-4 h-4" /> Back to Login
                 </button>
 
                 <div className="max-w-sm w-full mt-10">
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-4 block">Security</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-4 block">
+                        Security
+                    </span>
                     <h2 className="text-4xl font-black uppercase tracking-tighter mb-4">Reset Password</h2>
-                    <p className="text-gray-500 text-sm mb-10">Enter your email and we'll send you a verification code.</p>
+                    <p className="text-gray-500 text-sm mb-10">
+                        Enter your email and we&apos;ll send you a verification code.
+                    </p>
 
                     <form className="space-y-8" onSubmit={handleForgotPassword}>
                         <div className="auth-input-group">

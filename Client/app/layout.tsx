@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import '@/components/pages/user/HomePage.css';
 import { UserLayout } from '@/components/layout/UserLayout';
 import ReduxProvider from '@/redux/ReduxProvider';
 
@@ -16,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Natura Travel", // Nên đổi lại title cho đúng dự án của bạn
+  title: "Natura Travel",
   description: "Khám phá các tour du lịch tuyệt vời",
 };
 
@@ -27,16 +26,13 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="vi"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      suppressHydrationWarning // Khuyên dùng để tránh lỗi từ extension trình duyệt
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        {/* Bọc Provider ở ngoài cùng để cấp state cho toàn app */}
         <ReduxProvider>
-          {/* Bọc Layout có chứa Navbar */}
           <UserLayout>
-            {/* Nội dung các trang con (page.tsx) sẽ hiển thị ở đây */}
             {children}
           </UserLayout>
         </ReduxProvider>

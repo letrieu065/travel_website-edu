@@ -1,35 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+'use client';
+
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3600';
+
+// (Đã thêm)
+const emptySubscribe = () => () => {};
 
 const ResetPassword: React.FC = () => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const navigate = useNavigate();
-    const location = useLocation();
+    const router = useRouter();
 
-    // Lấy email từ state (truyền từ trang VerifyOTP sang)
-    const email = location.state?.email;
-    const tempToken = localStorage.getItem('tempToken');
+    const email = useSyncExternalStore(
+        emptySubscribe,
+        () => sessionStorage.getItem('resetEmail') || '',
+        () => ''
+    );
+    const tempToken = useSyncExternalStore(
+        emptySubscribe,
+        () => localStorage.getItem('tempToken') || '',
+        () => ''
+    );
 
-    // Kiểm tra bảo mật cơ bản khi vừa vào trang
     useEffect(() => {
-        if (!tempToken || !email) {
-            alert('Phiên làm việc không hợp lệ. Vui lòng thực hiện lại từ đầu.');
-            navigate('/login');
+        const storedEmail = sessionStorage.getItem('resetEmail');
+        const storedToken = localStorage.getItem('tempToken');
+        if (!storedToken || !storedEmail) {
+            router.push('/login');
         }
-    }, [email, tempToken, navigate]);
+    }, [router]);
 
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // 1. Kiểm tra mật khẩu xác nhận có khớp không
         if (newPassword !== confirmPassword) {
             alert('Mật khẩu xác nhận không khớp!');
             return;
         }
 
-        // 2. Kiểm tra độ dài mật khẩu (tuỳ chọn, tuỳ theo rule dự án của bạn)
         if (newPassword.length < 6) {
             alert('Mật khẩu phải có ít nhất 6 ký tự!');
             return;
@@ -38,8 +50,7 @@ const ResetPassword: React.FC = () => {
         setIsLoading(true);
 
         try {
-            // 3. Gọi API reset pass
-            const response = await fetch('http://localhost:3600/api/auth/reset', {
+            const response = await fetch(`${API_URL}/api/v1/auth/reset`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -47,7 +58,7 @@ const ResetPassword: React.FC = () => {
                 body: JSON.stringify({
                     email,
                     tempToken,
-                    newPassword
+                    newPassword,
                 }),
             });
 
@@ -55,12 +66,9 @@ const ResetPassword: React.FC = () => {
 
             if (response.ok) {
                 alert('Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.');
-
-                // Xoá token tạm vì đã sử dụng xong, kết thúc luồng quên mật khẩu an toàn
                 localStorage.removeItem('tempToken');
-
-                // Chuyển hướng người dùng về trang Đăng nhập
-                navigate('/login');
+                sessionStorage.removeItem('resetEmail');
+                router.push('/login');
             } else {
                 alert(data.message || 'Không thể đặt lại mật khẩu!');
             }
@@ -75,20 +83,16 @@ const ResetPassword: React.FC = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#f9fafb] p-4 font-sans">
             <div className="bg-white w-full max-w-lg p-10 rounded-xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-gray-100">
-
-                {/* Back Button */}
                 <button
-                    onClick={() => navigate('/login')}
+                    type="button"
+                    onClick={() => router.push('/login')}
                     className="flex items-center text-sm font-bold text-gray-900 tracking-wider mb-12 hover:text-gray-600 transition-colors"
                 >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
+                    <ArrowLeft className="w-4 h-4 mr-2" />
                     BACK TO LOGIN
                 </button>
 
                 <div className="pl-2">
-                    {/* Headers */}
                     <div className="mb-8">
                         <p className="text-xs font-bold text-gray-400 tracking-[0.2em] mb-2 uppercase">
                             Security
@@ -101,7 +105,6 @@ const ResetPassword: React.FC = () => {
                         </p>
                     </div>
 
-                    {/* Form */}
                     <form onSubmit={handleResetPassword} className="space-y-8">
                         <div>
                             <label className="block text-xs font-bold text-gray-500 tracking-[0.15em] mb-4 uppercase">
@@ -112,6 +115,7 @@ const ResetPassword: React.FC = () => {
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 placeholder="Enter your new password"
+                                minLength={6}
                                 required
                                 className="w-full pb-3 border-b-2 border-gray-100 text-gray-900 text-lg placeholder-gray-300 focus:outline-none focus:border-[#111827] transition-colors"
                             />
@@ -126,6 +130,7 @@ const ResetPassword: React.FC = () => {
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 placeholder="Confirm your new password"
+                                minLength={6}
                                 required
                                 className="w-full pb-3 border-b-2 border-gray-100 text-gray-900 text-lg placeholder-gray-300 focus:outline-none focus:border-[#111827] transition-colors"
                             />

@@ -6,10 +6,13 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
+import { useDispatch } from 'react-redux';
+import { setProfile } from '@/redux/userSlice';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3600';
 
 function getPostLoginPath(): string {
+    if (typeof window === 'undefined') return '/';
     const nextPath = new URLSearchParams(window.location.search).get('next');
     return nextPath?.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/';
 }
@@ -26,8 +29,10 @@ function LoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const router = useRouter();
+    const dispatch = useDispatch();
 
     const loginCustomGoogle = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -42,6 +47,9 @@ function LoginForm() {
 
                 if (response.ok) {
                     localStorage.setItem('token', data.accessToken);
+                    if (data.user) {
+                        dispatch(setProfile(data.user));
+                    }
                     router.push(getPostLoginPath());
                 } else {
                     alert(data.message || 'Xác thực Google tại Server thất bại!');
@@ -58,6 +66,7 @@ function LoginForm() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsLoading(true);
 
         try {
             const response = await fetch(`${API_URL}/api/v1/auth/login`, {
@@ -70,6 +79,9 @@ function LoginForm() {
 
             if (response.ok) {
                 localStorage.setItem('token', data.accessToken);
+                if (data.user) {
+                    dispatch(setProfile(data.user));
+                }
                 router.push(getPostLoginPath());
             } else {
                 alert(data.message || 'Đăng nhập thất bại!');
@@ -77,12 +89,13 @@ function LoginForm() {
         } catch (error) {
             console.error('Lỗi khi gọi API:', error);
             alert('Không thể kết nối đến Server. Vui lòng thử lại sau!');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
         <div className="flex flex-col md:flex-row min-h-screen w-full">
-            {/* Cột trái: Form */}
             <div className="auth-form-side w-full md:w-1/2 flex flex-col justify-center relative anim-left bg-white p-8">
                 <button
                     type="button"
@@ -139,6 +152,7 @@ function LoginForm() {
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
                                 className="absolute right-0 bottom-3 text-gray-400 hover:text-black"
+                                aria-label="Toggle password visibility"
                             >
                                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
@@ -153,9 +167,10 @@ function LoginForm() {
 
                         <button
                             type="submit"
-                            className="w-full bg-[#0f141e] text-white font-bold uppercase tracking-widest text-xs py-4 rounded hover:bg-black transition-colors mb-6"
+                            disabled={isLoading}
+                            className="w-full bg-[#0f141e] text-white font-bold uppercase tracking-widest text-xs py-4 rounded hover:bg-black transition-colors mb-6 disabled:opacity-60"
                         >
-                            Sign In
+                            {isLoading ? 'Signing In...' : 'Sign In'}
                         </button>
                     </form>
 
@@ -171,12 +186,14 @@ function LoginForm() {
                 </div>
             </div>
 
-            {/* Cột phải: Hình ảnh */}
             <div className="auth-img-side hidden md:block w-1/2 relative h-screen">
-                <img
-                src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1000&auto=format&fit=crop"
-                alt="Nature"
-                className="w-full h-full object-cover"
+                <Image
+                    src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1000&auto=format&fit=crop"
+                    alt="Nature"
+                    fill
+                    sizes="50vw"
+                    className="object-cover"
+                    priority
                 />
                 <div className="absolute bottom-12 left-12 right-12 text-white">
                     <span className="text-xs font-bold uppercase tracking-[0.3em] mb-4 block drop-shadow-md">
