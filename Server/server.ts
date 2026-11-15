@@ -1,8 +1,5 @@
-import app from './src/index';
-import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
 import 'dotenv/config';
+import app from './src/index';
 import prisma from './src/config/prisma';
 
 const PORT = process.env.PORT || 3000;
