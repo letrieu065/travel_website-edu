@@ -1,20 +1,40 @@
+/**
+ * ============================================================================
+ * MODULE BOOKINGS - CONTROLLER (Xử lý HTTP Request cho Đặt chỗ)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Tiếp nhận và xác thực dữ liệu đầu vào cho quy trình đặt chỗ dịch vụ (Tours, Hotels, Flights).
+ * - Xác thực người dùng qua JWT Authorization Bearer Token.
+ * - Điều phối dữ liệu xuống Service Layer và trả về HTTP Response chuẩn RESTful.
+ * ============================================================================
+ */
+
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bookingsService from './bookings.service';
 
-// (Đã thêm)
+/**
+ * Xử lý và chuẩn hóa lỗi cho các phương thức trong Controller
+ * // (Đã thêm)
+ */
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
     return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
 };
 
-// (Đã thêm)
+/**
+ * Lấy giá trị tham số URL an toàn dạng string
+ * // (Đã thêm)
+ */
 const getParam = (param: string | string[] | undefined): string => {
     if (Array.isArray(param)) return param[0] || '';
     return param || '';
 };
 
-// (Đã thêm)
+/**
+ * Trích xuất User ID từ JWT Header hoặc Request Context
+ * // (Đã thêm)
+ */
 const extractUserId = (req: Request): string => {
     const reqUser = (req as any).user;
     if (reqUser?.userId) return reqUser.userId;
@@ -37,7 +57,13 @@ const extractUserId = (req: Request): string => {
 
 /* ============================== CONTROLLERS ============================== */
 
-// body: { items, payment_method, discount_amount }
+/**
+ * Tạo mới đơn đặt chỗ dịch vụ đa thể loại (Tour, Khách sạn, Chuyến bay hoặc Combo)
+ * - Endpoint: POST /api/v1/bookings
+ * - Yêu cầu xác thực: Bearer Token
+ * - Body: { items: BookingItemInput[], payment_method?: string, discount_amount?: number }
+ * // (Đã thêm)
+ */
 const createBooking = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -62,7 +88,12 @@ const createBooking = async (req: Request, res: Response) => {
     }
 };
 
-// query: page, limit
+/**
+ * Lấy danh sách lịch sử các đơn đặt chỗ của người dùng hiện tại có phân trang
+ * - Endpoint: GET /api/v1/bookings/my-bookings?page=1&limit=10
+ * - Yêu cầu xác thực: Bearer Token
+ * // (Đã thêm)
+ */
 const getMyBookings = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -78,7 +109,12 @@ const getMyBookings = async (req: Request, res: Response) => {
     }
 };
 
-// params: id
+/**
+ * Lấy chi tiết đơn đặt chỗ bao gồm danh sách dịch vụ và trạng thái giao dịch thanh toán
+ * - Endpoint: GET /api/v1/bookings/:id
+ * - Yêu cầu xác thực: Bearer Token
+ * // (Đã thêm)
+ */
 const getBookingById = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -96,7 +132,12 @@ const getBookingById = async (req: Request, res: Response) => {
     }
 };
 
-// params: id
+/**
+ * Hủy đơn đặt chỗ và tự động hoàn trả số lượng ghế / phòng khả dụng về kho
+ * - Endpoint: PATCH /api/v1/bookings/:id/cancel
+ * - Yêu cầu xác thực: Bearer Token
+ * // (Đã thêm)
+ */
 const cancelBooking = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -117,4 +158,3 @@ export default {
     getBookingById,
     cancelBooking,
 };
-

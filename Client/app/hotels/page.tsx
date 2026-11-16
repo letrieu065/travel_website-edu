@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE HOTELS - CLIENT PAGE (Trang Khách Sạn & Khu Nghỉ Dưỡng Natura Travel)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Khám phá các khách sạn, resort sinh thái và boutique hotel phong cách Lonely Planet.
+ * - Bộ lọc đa dạng: Thành phố, số sao (1-5 sao), tầm giá/đêm, tiện ích (Wifi, Bể bơi, Spa, Ăn sáng).
+ * - Hiển thị huy hiệu Trending cho các khách sạn nổi bật.
+ * - Kết nối trực tiếp API Backend: GET /api/v1/hotels
+ * ============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';

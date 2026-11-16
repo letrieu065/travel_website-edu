@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE TOURS - DETAIL PAGE (Trang Chi Tiết Tour Du Lịch Natura Travel)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Hiển thị toàn cảnh tour du lịch: Gallery ảnh, hành trình di chuyển, dịch vụ đi kèm.
+ * - Danh sách các đợt khởi hành còn chỗ trống, giá gốc và giá khuyến mãi.
+ * - Widget đặt chỗ nhanh chuyển thẳng đến trang Checkout (/checkout).
+ * - Kết nối API: GET /api/v1/tours/:id & GET /api/v1/tours/:id/departures
+ * ============================================================================
+ */
+
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';

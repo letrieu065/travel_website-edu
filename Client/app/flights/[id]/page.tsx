@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE FLIGHTS - DETAIL PAGE (Trang Chi Tiết Chuyến Bay & Boarding Pass)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Trình bày thông tin vé máy bay điện tử (E-Ticket / Boarding Pass).
+ * - Chi tiết loại máy bay, hành lý xách tay/ký gửi, suất ăn và dịch vụ trên khoang.
+ * - Cho phép chọn số lượng hành khách và tính toán tổng chi phí vé theo thời gian thực.
+ * - Kết nối trực tiếp API Backend: GET /api/v1/flights/:id
+ * ============================================================================
+ */
+
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

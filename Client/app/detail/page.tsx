@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE DETAIL - USER PROFILE PAGE (Trang Hồ Sơ & Hành Trình Cá Nhân)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Quản lý thông tin tài khoản người dùng: Họ tên, số điện thoại, ảnh đại diện avatar.
+ * - Cho phép đổi mật khẩu với xác nhận tính toàn vẹn.
+ * - Quản lý hành trình sắp tới & đã qua (Itinerary) và danh sách địa điểm yêu thích (Favorites).
+ * - Kết nối API: GET/PUT /api/v1/users/profile, PATCH /api/v1/users/change-password, GET /api/v1/users/itinerary
+ * ============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE TOURS - CLIENT PAGE (Trang Khám Phá Tours Du Lịch Natura Travel)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Hiển thị danh sách các tour du lịch sinh thái & trải nghiệm văn hóa bản địa.
+ * - Bộ lọc nâng cao: Tìm kiếm tên tour, điểm đến, điểm khởi hành, loại tour, tầm giá, số sao.
+ * - Phân trang dữ liệu và hiển thị trạng thái tải / lỗi thân thiện người dùng.
+ * - Kết nối trực tiếp API Backend: GET /api/v1/tours
+ * ============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Filter, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import TourCard, { type Tour } from '@/components/common/TourCard';

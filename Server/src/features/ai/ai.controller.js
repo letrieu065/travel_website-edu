@@ -1,0 +1,83 @@
+"use strict";
+/**
+ * ============================================================================
+ * MODULE AI - CONTROLLER (Trợ Lý AI Lập Lịch Trình & So Sánh Tours)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Tiếp nhận yêu cầu tạo lịch trình thông minh dựa trên ngân sách, số ngày, sở thích.
+ * - Tích hợp mô hình ngôn ngữ lớn Google Gemini AI để sinh lời khuyên (narrative).
+ * - Cung cấp tính năng so sánh đa chiều giữa các tour du lịch (so sánh giá, rating, độ dài).
+ * ============================================================================
+ */
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const ai_service_1 = __importDefault(require("./ai.service"));
+/**
+ * Xử lý lỗi chuẩn cho AI Controller
+ * // (Đã thêm)
+ */
+const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xảy ra') => {
+    console.error(defaultMessage, error);
+    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+};
+/* ============================== CONTROLLERS ============================== */
+/**
+ * Tạo lịch trình du lịch thông minh từng ngày bằng AI
+ * - Endpoint: POST /api/v1/ai/generate-itinerary
+ * - Body: { budget: number, days: number, interests: string[], destination?: string, guests?: number }
+ * // (Đã thêm)
+ */
+const generateItinerary = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { budget, days, interests, destination, guests } = req.body;
+        if (!budget || !days) {
+            return res.status(400).json({ status: 'error', message: 'Vui lòng nhập ngân sách (budget) và số ngày (days)' });
+        }
+        const result = yield ai_service_1.default.generateItinerary({
+            budget: Number(budget),
+            days: Number(days),
+            interests: Array.isArray(interests) ? interests : [],
+            destination,
+            guests: guests ? Number(guests) : undefined,
+        });
+        return res.status(200).json({ status: 'success', data: result });
+    }
+    catch (error) {
+        return handleControllerError(res, error, 'Lỗi khi AI sinh lịch trình');
+    }
+});
+/**
+ * So sánh từ 2 đến 4 tour du lịch để hỗ trợ quyết định đặt chỗ
+ * - Endpoint: POST /api/v1/ai/compare-tours
+ * - Body: { tour_ids: string[], priority?: 'budget' | 'rating' | 'duration' }
+ * // (Đã thêm)
+ */
+const compareTours = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { tour_ids, priority } = req.body;
+        if (!Array.isArray(tour_ids) || tour_ids.length < 2 || tour_ids.length > 4) {
+            return res.status(400).json({ status: 'error', message: 'Vui lòng chọn từ 2 đến 4 tour để so sánh' });
+        }
+        const result = yield ai_service_1.default.compareTours({ tour_ids, priority });
+        return res.status(200).json({ status: 'success', data: result });
+    }
+    catch (error) {
+        return handleControllerError(res, error, 'Lỗi khi AI so sánh tour');
+    }
+});
+exports.default = {
+    generateItinerary,
+    compareTours,
+};
+//# sourceMappingURL=ai.controller.js.map

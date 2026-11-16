@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE COMBOS - CLIENT PAGE (Trang Gói Combo Tiết Kiệm Natura Travel)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Trưng bày các gói combo du lịch trọn gói (Tour + Khách sạn + Vé máy bay).
+ * - Tự động áp dụng mức ưu đãi tiết kiệm từ 10% đến 15% so với đặt lẻ từng dịch vụ.
+ * - Bộ lọc theo điểm đến, số lượng khách, số đêm lưu trú và hạn mức ngân sách.
+ * - Kết nối trực tiếp API Backend: GET /api/v1/combos & POST /api/v1/combos/suggest
+ * ============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';

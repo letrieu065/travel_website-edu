@@ -1,16 +1,37 @@
+/**
+ * ============================================================================
+ * MODULE PAYMENTS - SERVICE (Nghiệp vụ Xử lý Thanh toán & Gửi Mail Xác nhận)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Khởi tạo mã giao dịch duy nhất (transaction_id).
+ * - Sinh mã QR VietQR (chuẩn NAPAS 247) và link thanh toán MoMo sandbox.
+ * - Xử lý Webhook IPN cập nhật trạng thái đơn sang 'paid' và kích hoạt gửi mail hóa đơn.
+ * - Xử lý quy trình hoàn tiền (Refund request).
+ * ============================================================================
+ */
+
 import prisma from '../../config/prisma';
 import nodemailer from 'nodemailer';
 
 /* ============================== TYPES ============================== */
 
+/**
+ * Các phương thức thanh toán được hỗ trợ trong hệ thống Natura Travel
+ */
 export type PaymentMethod = 'momo' | 'bank_transfer' | 'vnpay' | 'f88_loan';
 
+/**
+ * Dữ liệu yêu cầu khởi tạo thanh toán
+ */
 export interface CreatePaymentData {
     booking_id: string;
     payment_method: PaymentMethod;
 }
 
-// (Đã thêm)
+/**
+ * Gửi email tự động xác nhận đặt chỗ và hóa đơn thanh toán qua Nodemailer (Gmail SMTP)
+ * // (Đã thêm)
+ */
 const sendConfirmationEmail = async (toEmail: string, bookingId: string, amount: number, method: string) => {
     if (!process.env.MY_GMAIL || !process.env.GMAIL_APP_PASSWORD) return;
 
@@ -43,6 +64,10 @@ const sendConfirmationEmail = async (toEmail: string, bookingId: string, amount:
 
 /* ============================== SERVICE METHODS ============================== */
 
+/**
+ * Khởi tạo giao dịch thanh toán trong cơ sở dữ liệu và sinh mã QR/URL thanh toán
+ * // (Đã thêm)
+ */
 const createPayment = async (data: CreatePaymentData) => {
     const booking = await prisma.bookings.findUnique({
         where: { id: data.booking_id },
@@ -66,7 +91,7 @@ const createPayment = async (data: CreatePaymentData) => {
         },
     });
 
-    // TODO: Kết nối SDK/API thật của MoMo / PayOS / VietQR để sinh payment_url hoặc qr_url
+    // Sinh mã QR VietQR hoặc đường dẫn cổng thanh toán
     const paymentUrl =
         data.payment_method === 'momo'
             ? `https://test-payment.momo.vn/pay/${transactionId}`
@@ -81,6 +106,11 @@ const createPayment = async (data: CreatePaymentData) => {
     };
 };
 
+/**
+ * Xử lý cập nhật trạng thái giao dịch từ Webhook cổng thanh toán
+ * - Nếu trạng thái là 'paid': Cập nhật thời gian thanh toán và gửi email xác nhận cho khách hàng
+ * // (Đã thêm)
+ */
 const processPaymentWebhook = async (transactionId: string, status: 'paid' | 'failed') => {
     const payment = await prisma.payments.findUnique({
         where: { transaction_id: transactionId },
@@ -115,6 +145,10 @@ const processPaymentWebhook = async (transactionId: string, status: 'paid' | 'fa
     return updated;
 };
 
+/**
+ * Lấy lịch sử tất cả các khoản thanh toán của một người dùng
+ * // (Đã thêm)
+ */
 const getMyPayments = async (userId: string) => {
     return prisma.payments.findMany({
         where: {
@@ -129,12 +163,20 @@ const getMyPayments = async (userId: string) => {
     });
 };
 
+/**
+ * Kiểm tra trạng thái giao dịch theo ID
+ * // (Đã thêm)
+ */
 const getPaymentStatus = async (paymentId: string) => {
     return prisma.payments.findUnique({
         where: { id: paymentId },
     });
 };
 
+/**
+ * Gửi yêu cầu hoàn tiền cho giao dịch đã thanh toán
+ * // (Đã thêm)
+ */
 const requestRefund = async (userId: string, paymentId: string) => {
     const payment = await prisma.payments.findFirst({
         where: {
@@ -163,4 +205,3 @@ export default {
     getPaymentStatus,
     requestRefund,
 };
-

@@ -1,13 +1,30 @@
+/**
+ * ============================================================================
+ * MODULE FLIGHTS - CONTROLLER (Xử lý HTTP Request cho Vé Máy Bay)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Tiếp nhận và xác thực query filters (sân bay đi/đến, ngày bay, hãng bay, số hành khách).
+ * - Cung cấp danh sách chuyến bay khả dụng với số ghế trống (available_seats >= passengers).
+ * - Cung cấp danh sách hãng hàng không đối tác và danh mục các sân bay.
+ * ============================================================================
+ */
+
 import { Request, Response } from 'express';
 import flightsService from './flights.service';
 
-// (Đã thêm)
+/**
+ * Xử lý lỗi chuẩn cho Flights Controller
+ * // (Đã thêm)
+ */
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
     return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
 };
 
-// (Đã thêm)
+/**
+ * Trích xuất an toàn giá trị string từ route params
+ * // (Đã thêm)
+ */
 const getParam = (param: string | string[] | undefined): string => {
     if (Array.isArray(param)) return param[0] || '';
     return param || '';
@@ -15,7 +32,12 @@ const getParam = (param: string | string[] | undefined): string => {
 
 /* ============================== CONTROLLERS ============================== */
 
-// query: page, limit, departure_airport, arrival_airport, departure_date, airline, passengers, min_price, max_price, sort
+/**
+ * Tìm kiếm danh sách chuyến bay theo chặng bay, ngày bay và số lượng hành khách
+ * - Endpoint: GET /api/v1/flights
+ * - Query Params: page, limit, departure_airport, arrival_airport, departure_date, airline, passengers, min_price, max_price, sort
+ * // (Đã thêm)
+ */
 const getFlights = async (req: Request, res: Response) => {
     try {
         const {
@@ -50,7 +72,11 @@ const getFlights = async (req: Request, res: Response) => {
     }
 };
 
-// params: id
+/**
+ * Lấy chi tiết một chuyến bay theo ID kèm thông tin máy bay (planes)
+ * - Endpoint: GET /api/v1/flights/:id
+ * // (Đã thêm)
+ */
 const getFlightById = async (req: Request, res: Response) => {
     try {
         const id = getParam(req.params.id);
@@ -64,6 +90,11 @@ const getFlightById = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * Lấy danh sách tất cả các hãng hàng không đang khai thác
+ * - Endpoint: GET /api/v1/flights/meta/airlines
+ * // (Đã thêm)
+ */
 const getAirlines = async (req: Request, res: Response) => {
     try {
         const airlines = await flightsService.getAirlines();
@@ -73,6 +104,11 @@ const getAirlines = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * Lấy danh mục tất cả các sân bay đi và đến có trong hệ thống
+ * - Endpoint: GET /api/v1/flights/meta/airports
+ * // (Đã thêm)
+ */
 const getAirports = async (req: Request, res: Response) => {
     try {
         const airports = await flightsService.getAirports();
@@ -88,4 +124,3 @@ export default {
     getAirlines,
     getAirports,
 };
-

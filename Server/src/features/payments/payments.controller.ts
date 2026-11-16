@@ -1,20 +1,40 @@
+/**
+ * ============================================================================
+ * MODULE PAYMENTS - CONTROLLER (Xử lý HTTP Request cho Cổng Thanh Toán)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Tiếp nhận yêu cầu khởi tạo thanh toán đa phương thức (VietQR, MoMo, VNPay, Trả góp).
+ * - Xử lý Webhook IPN từ cổng thanh toán đối tác khi khách hàng chuyển khoản thành công.
+ * - Kiểm tra trạng thái giao dịch và xử lý yêu cầu hoàn tiền.
+ * ============================================================================
+ */
+
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import paymentsService, { PaymentMethod } from './payments.service';
 
-// (Đã thêm)
+/**
+ * Xử lý lỗi chuẩn cho Payments Controller
+ * // (Đã thêm)
+ */
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
     return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
 };
 
-// (Đã thêm)
+/**
+ * Trích xuất an toàn giá trị string từ route params
+ * // (Đã thêm)
+ */
 const getParam = (param: string | string[] | undefined): string => {
     if (Array.isArray(param)) return param[0] || '';
     return param || '';
 };
 
-// (Đã thêm)
+/**
+ * Trích xuất ID người dùng từ JWT Token
+ * // (Đã thêm)
+ */
 const extractUserId = (req: Request): string => {
     const reqUser = (req as any).user;
     if (reqUser?.userId) return reqUser.userId;
@@ -37,7 +57,13 @@ const extractUserId = (req: Request): string => {
 
 /* ============================== CONTROLLERS ============================== */
 
-// body: { booking_id, payment_method }
+/**
+ * Khởi tạo giao dịch thanh toán mới cho đơn đặt chỗ
+ * - Endpoint: POST /api/v1/payments/create
+ * - Body: { booking_id: string, payment_method: PaymentMethod }
+ * - Hỗ trợ: 'momo', 'bank_transfer', 'vnpay', 'f88_loan'
+ * // (Đã thêm)
+ */
 const createPayment = async (req: Request, res: Response) => {
     try {
         const { booking_id, payment_method } = req.body;
@@ -56,7 +82,12 @@ const createPayment = async (req: Request, res: Response) => {
     }
 };
 
-// body: { transaction_id, status }
+/**
+ * Xử lý Webhook (Instant Payment Notification - IPN) từ cổng thanh toán
+ * - Endpoint: POST /api/v1/payments/webhook
+ * - Body: { transaction_id: string, status: 'paid' | 'failed' }
+ * // (Đã thêm)
+ */
 const handlePaymentWebhook = async (req: Request, res: Response) => {
     try {
         const { transaction_id, status } = req.body;
@@ -71,7 +102,11 @@ const handlePaymentWebhook = async (req: Request, res: Response) => {
     }
 };
 
-// header: Authorization Bearer
+/**
+ * Lấy danh sách lịch sử tất cả các giao dịch thanh toán của người dùng hiện tại
+ * - Endpoint: GET /api/v1/payments/my-payments
+ * // (Đã thêm)
+ */
 const getMyPayments = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -85,7 +120,11 @@ const getMyPayments = async (req: Request, res: Response) => {
     }
 };
 
-// params: id
+/**
+ * Kiểm tra trạng thái thanh toán của một giao dịch cụ thể
+ * - Endpoint: GET /api/v1/payments/:id/status
+ * // (Đã thêm)
+ */
 const getPaymentStatus = async (req: Request, res: Response) => {
     try {
         const id = getParam(req.params.id);
@@ -99,7 +138,11 @@ const getPaymentStatus = async (req: Request, res: Response) => {
     }
 };
 
-// params: id
+/**
+ * Gửi yêu cầu hoàn tiền cho đơn đặt chỗ đã thanh toán
+ * - Endpoint: POST /api/v1/payments/:id/refund
+ * // (Đã thêm)
+ */
 const requestRefund = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -121,4 +164,3 @@ export default {
     getPaymentStatus,
     requestRefund,
 };
-

@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE COMBOS - CUSTOMIZER DETAIL PAGE (Trang Tùy Chỉnh Gói Combo)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Trình bày chi tiết gói combo trọn gói gắn liền với một tour du lịch cụ thể.
+ * - Cho phép người dùng linh hoạt đổi khách sạn hoặc chuyến bay từ danh sách gợi ý.
+ * - Tính toán lại biểu phí, tiền giảm giá và tổng tiền thanh toán theo thời gian thực.
+ * - Kết nối trực tiếp API Backend: GET /api/v1/combos/:tourId
+ * ============================================================================
+ */
+
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';

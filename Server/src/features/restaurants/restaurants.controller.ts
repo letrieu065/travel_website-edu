@@ -1,13 +1,30 @@
+/**
+ * ============================================================================
+ * MODULE RESTAURANTS - CONTROLLER (Xử lý HTTP Request cho Ẩm Thực Bản Địa)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Khám phá các nhà hàng, quán ăn đặc sản theo phong cách Lonely Planet Food & Dining.
+ * - Lọc theo thành phố, phong cách ẩm thực (hải sản, truyền thống, Á-Âu) và mức giá trung bình.
+ * - Hỗ trợ đặt bàn trước tại các nhà hàng đối tác.
+ * ============================================================================
+ */
+
 import { Request, Response } from 'express';
 import restaurantsService from './restaurants.service';
 
-// (Đã thêm)
+/**
+ * Xử lý lỗi chuẩn cho Restaurants Controller
+ * // (Đã thêm)
+ */
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
     return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
 };
 
-// (Đã thêm)
+/**
+ * Trích xuất an toàn giá trị string từ route params
+ * // (Đã thêm)
+ */
 const getParam = (param: string | string[] | undefined): string => {
     if (Array.isArray(param)) return param[0] || '';
     return param || '';
@@ -15,7 +32,12 @@ const getParam = (param: string | string[] | undefined): string => {
 
 /* ============================== CONTROLLERS ============================== */
 
-// query: page, limit, search, city, cuisine, min_rating, sort
+/**
+ * Lấy danh sách nhà hàng với bộ lọc thành phố, món ăn, số sao và sắp xếp
+ * - Endpoint: GET /api/v1/restaurants
+ * - Query Params: page, limit, search, city, cuisine, min_rating, sort
+ * // (Đã thêm)
+ */
 const getRestaurants = async (req: Request, res: Response) => {
     try {
         const { page = 1, limit = 10, search, city, cuisine, min_rating, sort } = req.query;
@@ -34,7 +56,11 @@ const getRestaurants = async (req: Request, res: Response) => {
     }
 };
 
-// query: limit
+/**
+ * Lấy danh sách các nhà hàng được đánh giá cao nhất (Top Restaurants)
+ * - Endpoint: GET /api/v1/restaurants/top?limit=6
+ * // (Đã thêm)
+ */
 const getTopRestaurants = async (req: Request, res: Response) => {
     try {
         const limit = Number(req.query.limit) || 6;
@@ -45,7 +71,11 @@ const getTopRestaurants = async (req: Request, res: Response) => {
     }
 };
 
-// params: id
+/**
+ * Lấy chi tiết thông tin một nhà hàng theo ID
+ * - Endpoint: GET /api/v1/restaurants/:id
+ * // (Đã thêm)
+ */
 const getRestaurantById = async (req: Request, res: Response) => {
     try {
         const id = getParam(req.params.id);
@@ -64,4 +94,3 @@ export default {
     getTopRestaurants,
     getRestaurantById,
 };
-

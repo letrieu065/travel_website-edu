@@ -1,5 +1,18 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE CHECKOUT - PAYMENT PAGE (Trang Thanh Toán Đa Phương Thức)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Thu thập thông tin khách hàng đại diện đặt chỗ (họ tên, email, điện thoại).
+ * - Cung cấp 4 phương thức thanh toán linh hoạt: VietQR, Ví MoMo, VNPAY/Thẻ, Trả góp F88.
+ * - Khởi tạo đồng thời đơn đặt chỗ và giao dịch thanh toán trong hệ thống.
+ * - Hiển thị popup quét mã VietQR tự động điền tiền và nội dung chuyển khoản.
+ * - Kết nối trực tiếp API Backend: POST /api/v1/bookings & POST /api/v1/payments/create
+ * ============================================================================
+ */
+
 import React, { useState, Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';

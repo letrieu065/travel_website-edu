@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE BOOKINGS - DETAIL TICKET PAGE (Trang Chi Tiết Vé & Boarding Pass Đơn Hàng)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Hiển thị vé xác nhận dịch vụ du lịch điện tử (E-Voucher / Boarding Pass).
+ * - Bảng kê chi tiết từng dịch vụ (Tour, Khách sạn, Vé máy bay) và số tiền thanh toán.
+ * - Hỗ trợ in ấn vé điện tử (window.print) và nút hủy vé có xác nhận an toàn.
+ * - Kết nối trực tiếp API Backend: GET /api/v1/bookings/:id
+ * ============================================================================
+ */
+
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';

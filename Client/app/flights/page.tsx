@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE FLIGHTS - CLIENT PAGE (Trang Đặt Vé Máy Bay Natura Travel)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Tra cứu vé máy bay các chặng nội địa và quốc tế.
+ * - Bộ lọc nâng cao: Sân bay đi/đến, ngày bay, hãng hàng không, số lượng hành khách, mức giá.
+ * - Hiển thị trực quan giờ cất cánh, hạ cánh, thời gian bay và số ghế trống còn lại.
+ * - Kết nối trực tiếp API Backend: GET /api/v1/flights
+ * ============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {

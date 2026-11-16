@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE RESTAURANTS - CULINARY GUIDE PAGE (Trang Ẩm Thực Bản Địa Lonely Planet)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Trải nghiệm khám phá các nhà hàng, quán ăn truyền thống và đặc sản ba miền.
+ * - Bộ lọc tìm kiếm: Tên quán/món ăn, tỉnh thành phố, phong cách ẩm thực, đánh giá sao.
+ * - Modal đặt bàn ăn trực tuyến có xác nhận thông tin nhanh chóng.
+ * - Kết nối trực tiếp API Backend: GET /api/v1/restaurants
+ * ============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import {

@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE BOOKINGS - CLIENT PAGE (Trang Quản Lý Đơn Đặt Chỗ Của Tôi)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Hiển thị danh sách toàn bộ các đơn đặt chỗ của người dùng đăng nhập.
+ * - Tab phân loại trạng thái: Tất cả, Đã xác nhận/thanh toán, Chờ thanh toán, Đã hủy/hoàn tiền.
+ * - Cho phép hủy đơn đặt chỗ trực tiếp và hoàn trả chỗ về kho dữ liệu.
+ * - Kết nối trực tiếp API Backend: GET /api/v1/bookings/my-bookings & PATCH /api/v1/bookings/:id/cancel
+ * ============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

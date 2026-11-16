@@ -1,5 +1,18 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE AI PLANNER - SMART ITINERARY (Trợ Lý AI Lập Kế Hoạch Lịch Trình)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Tiếp nhận yêu cầu du lịch của khách hàng: Điểm đến, số ngày, ngân sách, sở thích.
+ * - Gọi AI Backend để thiết kế lịch trình timeline chi tiết từng ngày và gợi ý chuyên sâu.
+ * - Tự động liên kết các Tour du lịch và Khách sạn thực tế có sẵn trong hệ thống Natura Travel.
+ * - Tính năng sao chép lịch trình (Copy to Clipboard) tiện lợi.
+ * - Kết nối trực tiếp API Backend: POST /api/v1/ai/generate-itinerary
+ * ============================================================================
+ */
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';

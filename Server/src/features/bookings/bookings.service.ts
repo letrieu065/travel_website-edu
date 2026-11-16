@@ -1,7 +1,22 @@
+/**
+ * ============================================================================
+ * MODULE BOOKINGS - SERVICE (Xử lý Nghiệp vụ Đặt chỗ & Quản lý Kho)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Thực thi nghiệp vụ đặt chỗ giao dịch nguyên tử ($transaction ACID của Prisma).
+ * - Kiểm tra số lượng chỗ còn trống (available_seats, available_rooms).
+ * - Tự động trừ số lượng khả dụng khi đặt chỗ và hoàn trả khi hủy.
+ * - Tính toán chính xác tổng tiền, áp dụng voucher giảm giá.
+ * ============================================================================
+ */
+
 import prisma from '../../config/prisma';
 
 /* ============================== TYPES ============================== */
 
+/**
+ * Cấu trúc dữ liệu từng mục dịch vụ trong đơn đặt chỗ
+ */
 export interface BookingItemInput {
     item_type: 'tour' | 'hotel' | 'flight';
     item_id: string; // Với tour có thể là tour_departure_id hoặc tour_id
@@ -10,6 +25,9 @@ export interface BookingItemInput {
     check_out?: string;
 }
 
+/**
+ * Dữ liệu đầu vào để tạo mới đơn đặt chỗ
+ */
 export interface CreateBookingData {
     user_id: string;
     items: BookingItemInput[];
@@ -17,7 +35,10 @@ export interface CreateBookingData {
     discount_amount?: number;
 }
 
-// (Đã thêm)
+/**
+ * Tính toán tham số phân trang chuẩn
+ * // (Đã thêm)
+ */
 const getPagination = (pageInput: number, limitInput: number) => {
     const page = Math.max(1, Number(pageInput) || 1);
     const limit = Math.max(1, Number(limitInput) || 10);
@@ -27,6 +48,13 @@ const getPagination = (pageInput: number, limitInput: number) => {
 
 /* ============================== SERVICE METHODS ============================== */
 
+/**
+ * Tạo mới đơn đặt chỗ sử dụng Prisma Transaction
+ * - Đảm bảo tính toàn vẹn dữ liệu: Nếu một dịch vụ hết chỗ, toàn bộ đơn sẽ rollback
+ * - Cập nhật kho (decrement seats/rooms)
+ * - Tự động khởi tạo bản ghi thanh toán nếu có payment_method
+ * // (Đã thêm)
+ */
 const createBooking = async (data: CreateBookingData) => {
     if (!data.items || data.items.length === 0) {
         throw new Error('Danh sách dịch vụ đặt chỗ không được để trống');
@@ -63,6 +91,7 @@ const createBooking = async (data: CreateBookingData) => {
                     throw new Error(`Tour không đủ chỗ trống (chỉ còn ${departure.available_seats} chỗ)`);
                 }
 
+                // Trừ số lượng chỗ trống của lịch khởi hành tour
                 await tx.tour_departures.update({
                     where: { id: departure.id },
                     data: { available_seats: { decrement: quantity } },
@@ -81,6 +110,7 @@ const createBooking = async (data: CreateBookingData) => {
                     throw new Error(`Khách sạn ${hotel.name} không đủ phòng trống (chỉ còn ${hotel.available_rooms} phòng)`);
                 }
 
+                // Trừ số lượng phòng trống của khách sạn
                 await tx.hotels.update({
                     where: { id: hotel.id },
                     data: { available_rooms: { decrement: quantity } },
@@ -103,6 +133,7 @@ const createBooking = async (data: CreateBookingData) => {
                     throw new Error(`Chuyến bay không đủ ghế trống (chỉ còn ${flight.available_seats} ghế)`);
                 }
 
+                // Trừ số lượng ghế trống của chuyến bay
                 await tx.flights.update({
                     where: { id: flight.id },
                     data: { available_seats: { decrement: quantity } },
@@ -128,6 +159,7 @@ const createBooking = async (data: CreateBookingData) => {
 
         const finalTotal = Math.max(0, totalPrice - (Number(data.discount_amount) || 0));
 
+        // Tạo đơn đặt chỗ chính kèm chi tiết từng mục dịch vụ và thanh toán
         const booking = await tx.bookings.create({
             data: {
                 user_id: data.user_id,
@@ -157,6 +189,10 @@ const createBooking = async (data: CreateBookingData) => {
     });
 };
 
+/**
+ * Lấy danh sách đơn đặt chỗ của người dùng với phân trang
+ * // (Đã thêm)
+ */
 const getMyBookings = async (userId: string, pageInput: number = 1, limitInput: number = 10) => {
     const { page, limit, skip } = getPagination(pageInput, limitInput);
 
@@ -177,6 +213,10 @@ const getMyBookings = async (userId: string, pageInput: number = 1, limitInput: 
     return { bookings: items, total, page, limit };
 };
 
+/**
+ * Lấy chi tiết đơn đặt chỗ theo ID của người dùng sở hữu
+ * // (Đã thêm)
+ */
 const getBookingById = async (userId: string, bookingId: string) => {
     return prisma.bookings.findFirst({
         where: { id: bookingId, user_id: userId },
@@ -187,6 +227,13 @@ const getBookingById = async (userId: string, bookingId: string) => {
     });
 };
 
+/**
+ * Hủy đơn đặt chỗ và hoàn trả số lượng ghế / phòng khả dụng về kho
+ * - Nếu đã thanh toán: Cập nhật payment_status thành 'refund_requested'
+ * - Nếu chưa thanh toán: Chuyển payment_status sang 'failed'
+ * - Tự động hoàn trả available_seats / available_rooms
+ * // (Đã thêm)
+ */
 const cancelBooking = async (userId: string, bookingId: string) => {
     const booking = await prisma.bookings.findFirst({
         where: { id: bookingId, user_id: userId },
@@ -199,7 +246,6 @@ const cancelBooking = async (userId: string, bookingId: string) => {
 
     const isPaid = booking.payments.some((p) => p.payment_status === 'paid');
     if (isPaid) {
-        // Nếu đã thanh toán, chuyển payment_status sang pending refund hoặc báo cần xử lý hoàn tiền
         await prisma.payments.updateMany({
             where: { booking_id: bookingId, payment_status: 'paid' },
             data: { payment_status: 'refund_requested' },
@@ -247,4 +293,3 @@ export default {
     getBookingById,
     cancelBooking,
 };
-

@@ -1,3 +1,15 @@
+/**
+ * ============================================================================
+ * MODULE HOMEPAGE - NATURA TRAVEL (Trang Chủ Phong Cách Tạp Chí Lonely Planet)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Trải nghiệm trang chủ đẳng cấp phong cách Lonely Planet: Typography đậm nét, Editorial Stories.
+ * - Tích hợp HeroSearchWidget 3-in-1 (Tours, Hotels, Flights).
+ * - Best in Travel (Top điểm đến nổi bật nhất mùa), Handpicked Experiences, Reviews chân thực.
+ * - Tích hợp du lịch sinh thái bền vững (Eco-travel & Green Commitment).
+ * ============================================================================
+ */
+
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';

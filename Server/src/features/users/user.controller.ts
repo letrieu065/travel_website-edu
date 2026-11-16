@@ -1,20 +1,40 @@
+/**
+ * ============================================================================
+ * MODULE USERS - CONTROLLER (Xử lý HTTP Request cho Hồ Sơ & Hành Trình Cá Nhân)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Tiếp nhận và xác thực thông tin tài khoản người dùng (Profile, Password).
+ * - Cung cấp danh sách hành trình sắp diễn ra và lịch sử chuyến đi của người dùng.
+ * - Quản lý danh sách các điểm đến / tour yêu thích (Favorites).
+ * ============================================================================
+ */
+
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import userService from './user.service';
 
-// (Đã thêm)
+/**
+ * Xử lý lỗi chuẩn cho Users Controller
+ * // (Đã thêm)
+ */
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
     return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
 };
 
-// (Đã thêm)
+/**
+ * Trích xuất an toàn giá trị string từ route params
+ * // (Đã thêm)
+ */
 const getParam = (param: string | string[] | undefined): string => {
     if (Array.isArray(param)) return param[0] || '';
     return param || '';
 };
 
-// (Đã thêm)
+/**
+ * Trích xuất User ID từ Authorization Bearer Token
+ * // (Đã thêm)
+ */
 const extractUserId = (req: Request): string => {
     const reqUser = (req as any).user;
     if (reqUser?.userId) return reqUser.userId;
@@ -37,7 +57,11 @@ const extractUserId = (req: Request): string => {
 
 /* ============================== CONTROLLERS ============================== */
 
-// header: Authorization Bearer | query: user_id
+/**
+ * Lấy thông tin hồ sơ chi tiết của người dùng hiện tại
+ * - Endpoint: GET /api/v1/users/profile
+ * // (Đã thêm)
+ */
 const getProfile = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -54,7 +78,12 @@ const getProfile = async (req: Request, res: Response) => {
     }
 };
 
-// body: UpdateProfileData
+/**
+ * Cập nhật thông tin hồ sơ người dùng (họ tên, số điện thoại, avatar)
+ * - Endpoint: PUT /api/v1/users/profile
+ * - Body: { full_name?: string, phone_number?: string, avatar_url?: string }
+ * // (Đã thêm)
+ */
 const updateProfile = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -68,7 +97,12 @@ const updateProfile = async (req: Request, res: Response) => {
     }
 };
 
-// body: { old_password, new_password }
+/**
+ * Đổi mật khẩu tài khoản người dùng
+ * - Endpoint: PATCH /api/v1/users/change-password
+ * - Body: { old_password, new_password }
+ * // (Đã thêm)
+ */
 const changePassword = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -86,7 +120,11 @@ const changePassword = async (req: Request, res: Response) => {
     }
 };
 
-// header: Authorization Bearer
+/**
+ * Lấy danh sách các chuyến đi sắp tới và lịch sử hành trình cũ của người dùng
+ * - Endpoint: GET /api/v1/users/itinerary
+ * // (Đã thêm)
+ */
 const getMyItinerary = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -100,7 +138,11 @@ const getMyItinerary = async (req: Request, res: Response) => {
     }
 };
 
-// params: bookingId
+/**
+ * Lấy chi tiết lịch trình một chuyến đi theo mã đặt chỗ (bookingId)
+ * - Endpoint: GET /api/v1/users/itinerary/:bookingId
+ * // (Đã thêm)
+ */
 const getItineraryDetail = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -118,7 +160,11 @@ const getItineraryDetail = async (req: Request, res: Response) => {
     }
 };
 
-// header: Authorization Bearer
+/**
+ * Lấy danh sách dịch vụ và điểm đến yêu thích của người dùng
+ * - Endpoint: GET /api/v1/users/favorites
+ * // (Đã thêm)
+ */
 const getFavorites = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -132,7 +178,12 @@ const getFavorites = async (req: Request, res: Response) => {
     }
 };
 
-// body: { item_type, item_id }
+/**
+ * Thêm một mục vào danh sách yêu thích
+ * - Endpoint: POST /api/v1/users/favorites
+ * - Body: { item_type: 'tour' | 'hotel' | 'flight', item_id: string }
+ * // (Đã thêm)
+ */
 const addFavorite = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -150,7 +201,11 @@ const addFavorite = async (req: Request, res: Response) => {
     }
 };
 
-// params: itemType, itemId
+/**
+ * Xóa một mục khỏi danh sách yêu thích
+ * - Endpoint: DELETE /api/v1/users/favorites/:itemType/:itemId
+ * // (Đã thêm)
+ */
 const removeFavorite = async (req: Request, res: Response) => {
     try {
         const userId = extractUserId(req);
@@ -176,4 +231,3 @@ export default {
     addFavorite,
     removeFavorite,
 };
-

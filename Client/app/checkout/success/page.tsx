@@ -1,5 +1,16 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE CHECKOUT - SUCCESS PAGE (Trang Xác Nhận Đặt Chỗ Thành Công)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Hiển thị thông báo hoàn tất thanh toán thành công và mã đặt chỗ (Booking ID).
+ * - Cung cấp danh mục các bước chuẩn bị trước chuyến đi (E-ticket, giấy tờ, hotline).
+ * - Cung cấp nút điều hướng xem đơn hàng hoặc quay về trang chủ.
+ * ============================================================================
+ */
+
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';

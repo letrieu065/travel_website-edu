@@ -1,7 +1,21 @@
+/**
+ * ============================================================================
+ * MODULE COMBOS - SERVICE (Nghiệp vụ Ghép nối Gói Combo & Tính Giá Ưu Đãi)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Ghép nối tour, khách sạn và chuyến bay phù hợp theo cùng điểm đến.
+ * - Áp dụng chính sách chiết khấu (10% - 15%) cho khách hàng đặt gói combo trọn gói.
+ * - Lọc theo hạn mức ngân sách (budget constraint) của khách hàng.
+ * ============================================================================
+ */
+
 import prisma from '../../config/prisma';
 
 /* ============================== TYPES ============================== */
 
+/**
+ * Tiêu chí tìm kiếm và gợi ý combo
+ */
 export interface ComboSuggestInput {
     destination?: string;
     departure_location?: string;
@@ -14,7 +28,10 @@ export interface ComboSuggestInput {
 
 /* ============================== SERVICE METHODS ============================== */
 
-// Gợi ý combo tự động: Tour + Khách sạn + Vé máy bay kèm ưu đãi
+/**
+ * Gợi ý combo tự động: Ghép Tour + Khách sạn + Vé máy bay kèm ưu đãi
+ * // (Đã thêm)
+ */
 const suggestCombo = async (input: ComboSuggestInput) => {
     const nights = Math.max(1, Number(input.nights) || 2);
     const guests = Math.max(1, Number(input.guests) || 2);
@@ -130,11 +147,19 @@ const suggestCombo = async (input: ComboSuggestInput) => {
     };
 };
 
+/**
+ * Lấy danh sách các combo phổ biến nhất
+ * // (Đã thêm)
+ */
 const getPopularCombos = async (limit: number = 6) => {
     const result = await suggestCombo({ guests: 2, nights: 2, discount_percent: 12 });
     return result.combos.slice(0, limit);
 };
 
+/**
+ * Lấy thông tin chi tiết combo kèm danh sách gợi ý khách sạn và chuyến bay theo tourId
+ * // (Đã thêm)
+ */
 const getComboByTourId = async (tourId: string, guests: number = 2, nights: number = 2) => {
     const tour = await prisma.tours.findUnique({
         where: { id: tourId },
@@ -181,4 +206,3 @@ export default {
     getPopularCombos,
     getComboByTourId,
 };
-

@@ -1,13 +1,30 @@
+/**
+ * ============================================================================
+ * MODULE HOTELS - CONTROLLER (Xử lý HTTP Request cho Khách Sạn & Resort)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Tiếp nhận và xác thực query filters (thành phố, số sao, tầm giá, tiện nghi).
+ * - Cung cấp danh sách khách sạn thịnh hành và top khách sạn được đánh giá cao.
+ * - Kiểm tra tình trạng phòng trống (room availability) theo ngày check-in / check-out.
+ * ============================================================================
+ */
+
 import { Request, Response } from 'express';
 import hotelsService from './hotels.service';
 
-// (Đã thêm)
+/**
+ * Xử lý lỗi chuẩn cho Hotels Controller
+ * // (Đã thêm)
+ */
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
     return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
 };
 
-// (Đã thêm)
+/**
+ * Trích xuất an toàn giá trị string từ route params
+ * // (Đã thêm)
+ */
 const getParam = (param: string | string[] | undefined): string => {
     if (Array.isArray(param)) return param[0] || '';
     return param || '';
@@ -15,7 +32,12 @@ const getParam = (param: string | string[] | undefined): string => {
 
 /* ============================== CONTROLLERS ============================== */
 
-// query: page, limit, search, city, star_rating, min_price, max_price, amenities (comma-separated), sort
+/**
+ * Lấy danh sách khách sạn có lọc đa tiêu chí và phân trang
+ * - Endpoint: GET /api/v1/hotels
+ * - Query Params: page, limit, search, city, star_rating, min_price, max_price, amenities, sort
+ * // (Đã thêm)
+ */
 const getHotels = async (req: Request, res: Response) => {
     try {
         const { page = 1, limit = 10, search, city, star_rating, min_price, max_price, amenities, sort } = req.query;
@@ -41,7 +63,11 @@ const getHotels = async (req: Request, res: Response) => {
     }
 };
 
-// query: limit
+/**
+ * Lấy danh sách các khách sạn thịnh hành (Trending) được du khách ưa chuộng
+ * - Endpoint: GET /api/v1/hotels/trending?limit=6
+ * // (Đã thêm)
+ */
 const getTrendingHotels = async (req: Request, res: Response) => {
     try {
         const limit = Number(req.query.limit) || 6;
@@ -52,7 +78,11 @@ const getTrendingHotels = async (req: Request, res: Response) => {
     }
 };
 
-// query: limit
+/**
+ * Lấy danh sách top khách sạn có số sao và chất lượng dịch vụ cao nhất
+ * - Endpoint: GET /api/v1/hotels/top?limit=6
+ * // (Đã thêm)
+ */
 const getTopHotels = async (req: Request, res: Response) => {
     try {
         const limit = Number(req.query.limit) || 6;
@@ -63,7 +93,11 @@ const getTopHotels = async (req: Request, res: Response) => {
     }
 };
 
-// params: id
+/**
+ * Lấy chi tiết thông tin một khách sạn theo ID kèm hình ảnh và tiện nghi
+ * - Endpoint: GET /api/v1/hotels/:id
+ * // (Đã thêm)
+ */
 const getHotelById = async (req: Request, res: Response) => {
     try {
         const id = getParam(req.params.id);
@@ -77,7 +111,11 @@ const getHotelById = async (req: Request, res: Response) => {
     }
 };
 
-// params: id | query: rooms, check_in, check_out
+/**
+ * Kiểm tra số lượng phòng còn trống cho khoảng thời gian lưu trú cụ thể
+ * - Endpoint: GET /api/v1/hotels/:id/availability?rooms=1&check_in=...&check_out=...
+ * // (Đã thêm)
+ */
 const checkRoomAvailability = async (req: Request, res: Response) => {
     try {
         const id = getParam(req.params.id);
@@ -102,4 +140,3 @@ export default {
     getHotelById,
     checkRoomAvailability,
 };
-

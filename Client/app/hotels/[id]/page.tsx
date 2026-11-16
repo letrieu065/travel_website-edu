@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ============================================================================
+ * MODULE HOTELS - DETAIL PAGE (Trang Chi Tiết Khách Sạn & Đặt Phòng)
+ * ============================================================================
+ * Chịu trách nhiệm:
+ * - Trình bày chi tiết phòng nghỉ: Tiện nghi, địa chỉ bản đồ, đánh giá từ du khách.
+ * - Kiểm tra tình trạng phòng trống (Availability) trực tiếp theo ngày check-in/out.
+ * - Widget đặt phòng trực tiếp chuyển hướng đến Checkout.
+ * - Kết nối API: GET /api/v1/hotels/:id & GET /api/v1/hotels/:id/availability
+ * ============================================================================
+ */
+
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
