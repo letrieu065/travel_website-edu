@@ -23,7 +23,7 @@ import {
     Clock,
     Building,
 } from 'lucide-react';
-import TourCard, { type Tour } from '@/components/common/TourCard';
+import TourCard, { type Tour, formatTourSummary } from '@/components/common/TourCard';
 import HeroSearchWidget from './HeroSearchWidget';
 import './HomePage.css';
 
@@ -166,8 +166,8 @@ export default async function HomePage() {
                         <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight leading-[0.95] text-white">
                             Khám Phá Thế Giới Theo Cách Của Bạn
                         </h1>
-                        <p className="mt-5 text-base sm:text-lg text-gray-200 max-w-2xl leading-relaxed font-medium">
-                            {heroTour?.description ||
+                        <p className="mt-5 text-base sm:text-lg text-gray-200 max-w-2xl leading-relaxed font-medium line-clamp-2 sm:line-clamp-3">
+                            {formatTourSummary(heroTour?.description, 160) ||
                                 'Natura Travel mang đến những hành trình nguyên bản, tour du lịch trọn gói và cẩm nang khám phá đích thực từ các chuyên gia bản địa.'}
                         </p>
 

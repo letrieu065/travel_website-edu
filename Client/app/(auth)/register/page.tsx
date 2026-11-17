@@ -252,9 +252,6 @@ export default function RegisterPage() {
                     {step === 'form' ? (
                         <>
                             <div className="mb-8">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-[#B45309] block mb-1">
-                                    Bước 1 / 2 · Thông Tin Thành Viên
-                                </span>
                                 <h2 className="text-3xl font-black uppercase tracking-tight text-gray-900 font-serif">
                                     Tạo Tài Khoản Mới
                                 </h2>
@@ -359,9 +356,6 @@ export default function RegisterPage() {
                         /* BƯỚC 2: Form nhập mã OTP từ Gmail */
                         <>
                             <div className="mb-8">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-[#B45309] block mb-1">
-                                    Bước 2 / 2 · Xác Thực Hộp Thư
-                                </span>
                                 <h2 className="text-3xl font-black uppercase tracking-tight text-gray-900 font-serif">
                                     Nhập Mã Xác Thực
                                 </h2>

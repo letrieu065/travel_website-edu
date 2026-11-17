@@ -28,6 +28,52 @@ export const formatTourPrice = (value: number | string) =>
         maximumFractionDigits: 0,
     }).format(Number(value));
 
+// (Đã thêm)
+export const formatTourSummary = (desc?: string | null, maxLength: number = 160): string => {
+    if (!desc) return '';
+    let text = desc;
+
+    // 1. Loại bỏ các khối metadata trong ngoặc vuông: [Mã chương trình: ...], [Mã: ...]
+    text = text.replace(/\[[^\]]+\]/g, ' ');
+
+    // 2. Loại bỏ các chỉ số đánh giá kỹ thuật và thông số hệ thống (ESG, LEI, v.v.)
+    text = text.replace(/(?:ĐIỂM\s*)?(?:ESG|LEI)[\s_:\d]+/gi, ' ');
+    text = text.replace(/ĐIỂM\s+[0-9]+/gi, ' ');
+
+    // 3. Loại bỏ biểu tượng checkmark, gạch đầu dòng và cụm từ "Điểm nhấn", "Điểm nổi bật"
+    text = text.replace(/[✔✓•\-\*]/g, ' ');
+    text = text.replace(/(?:Điểm\s*nhấn|Điểm\s*nổi\s*bật)\s*:?/gi, ' ');
+
+    // 4. Chuẩn hóa khoảng trắng và loại bỏ các ký tự đặc biệt ở đầu chuỗi
+    text = text.replace(/\s+/g, ' ').trim();
+    text = text.replace(/^[^a-zA-Z0-9À-ỹ]+/u, '');
+
+    if (!text) return '';
+
+    // 5. Nếu chuỗi dài hơn maxLength, ưu tiên ngắt câu trọn vẹn tại dấu chấm
+    if (text.length > maxLength) {
+        const firstPeriodIdx = text.indexOf('. ');
+        // Nếu câu đầu tiên có độ dài đẹp (từ 50 đến maxLength ký tự), lấy trọn vẹn câu đầu tiên
+        if (firstPeriodIdx >= 50 && firstPeriodIdx <= maxLength) {
+            return text.slice(0, firstPeriodIdx + 1);
+        }
+
+        let truncated = text.slice(0, maxLength);
+        const periodIdx = truncated.lastIndexOf('. ');
+        if (periodIdx >= 50) {
+            return truncated.slice(0, periodIdx + 1);
+        }
+
+        const lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 30) {
+            truncated = truncated.slice(0, lastSpace);
+        }
+        return truncated.replace(/[,;:\-\s]+$/, '') + '...';
+    }
+
+    return text;
+};
+
 export default function TourCard({ tour }: { tour: Tour }) {
     const hasDiscount =
         tour.discountPrice != null && Number(tour.discountPrice) < Number(tour.price);
@@ -72,7 +118,9 @@ export default function TourCard({ tour }: { tour: Tour }) {
                     </p>
                     <h3 className="mb-3 text-xl font-black group-hover:underline">{tour.title}</h3>
                     {tour.description && (
-                        <p className="mb-4 line-clamp-2 text-sm text-gray-600">{tour.description}</p>
+                        <p className="mb-4 line-clamp-2 text-sm text-gray-600">
+                            {formatTourSummary(tour.description, 140)}
+                        </p>
                     )}
                     <div className="flex items-center justify-between border-t border-gray-200 pt-4">
                         <span className="flex items-center gap-1 text-sm text-gray-600">
