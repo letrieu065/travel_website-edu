@@ -12,7 +12,7 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -91,7 +91,7 @@ const calculateDuration = (startIso: string, endIso: string): string => {
     return `${hours} giờ ${minutes < 10 ? '0' : ''}${minutes} phút`;
 };
 
-export default function FlightDetailPage({
+function FlightDetailContent({
     params,
 }: {
     params: Promise<{ id: string }>;
@@ -448,5 +448,18 @@ export default function FlightDetailPage({
                 </div>
             </div>
         </div>
+    );
+}
+
+// (Đã thêm)
+export default function FlightDetailPage(props: { params: Promise<{ id: string }> }) {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-black border-t-[#FACC15] rounded-full animate-spin"></div>
+            </div>
+        }>
+            <FlightDetailContent {...props} />
+        </Suspense>
     );
 }
