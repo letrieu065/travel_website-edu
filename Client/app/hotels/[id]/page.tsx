@@ -12,7 +12,7 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -99,7 +99,7 @@ const getDayAfterTomorrowDate = (): string => {
     return d.toISOString().split('T')[0];
 };
 
-export default function HotelDetailPage({
+function HotelDetailContent({
     params,
 }: {
     params: Promise<{ id: string }>;
@@ -593,5 +593,18 @@ export default function HotelDetailPage({
                 </div>
             </div>
         </div>
+    );
+}
+
+// (Đã thêm)
+export default function HotelDetailPage(props: { params: Promise<{ id: string }> }) {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-black border-t-[#FACC15] rounded-full animate-spin"></div>
+            </div>
+        }>
+            <HotelDetailContent {...props} />
+        </Suspense>
     );
 }
