@@ -61,6 +61,9 @@ function VerifyOtp() {
             const data = await response.json();
 
             if (response.ok) {
+                if (data.resetToken || data.tempToken) {
+                    localStorage.setItem('tempToken', data.resetToken || data.tempToken);
+                }
                 alert('Xác thực OTP thành công! Vui lòng nhập mật khẩu mới.');
                 setStep('reset');
             } else {

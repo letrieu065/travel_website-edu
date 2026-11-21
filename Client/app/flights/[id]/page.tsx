@@ -146,10 +146,23 @@ export default function FlightDetailPage({
     // (Đã thêm)
     const handleBookingSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setBookingSuccess(true);
-        setTimeout(() => {
-            router.push('/login');
-        }, 2000);
+        if (flight && flight.available_seats < passengerCount) {
+            alert('Chuyến bay không đủ số lượng ghế trống theo yêu cầu.');
+            return;
+        }
+
+        const unitPrice = Number(flight?.ticket_price ?? 0);
+        const totalPrice = unitPrice * passengerCount;
+
+        const checkoutParams = new URLSearchParams({
+            type: 'flight',
+            flight_id: flight?.id || flightId,
+            guests: String(passengerCount),
+            price: String(totalPrice),
+            title: `Chuyến bay ${flight?.departure_airport || ''} -> ${flight?.arrival_airport || ''}`,
+        });
+
+        router.push(`/checkout?${checkoutParams.toString()}`);
     };
 
     if (isLoading) {

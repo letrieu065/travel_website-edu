@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Search, ShoppingCart, User, LogOut, Info, ChevronDown } from 'lucide-react';
+import { Search, ShoppingCart, User, LogOut, Info, ChevronDown, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setProfile, clearProfile, type UserProfile } from '@/redux/userSlice';
 import type { RootState } from '@/redux/store';
 import Footer from './Footer';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3600';
-const AUTH_ROUTES = ['/login', '/register', '/forgot-password', '/verify-otp'];
+const HIDDEN_HEADER_FOOTER_ROUTES = ['/login', '/register', '/forgot-password', '/verify-otp', '/admin'];
 
 // (Đã thêm)
 const UserHeader: React.FC = () => {
@@ -94,8 +94,8 @@ const UserHeader: React.FC = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const isAuthPage = AUTH_ROUTES.some((route) => pathname?.startsWith(route));
-    if (isAuthPage) {
+    const isHiddenPage = HIDDEN_HEADER_FOOTER_ROUTES.some((route) => pathname?.startsWith(route));
+    if (isHiddenPage) {
         return null;
     }
 
@@ -148,6 +148,18 @@ const UserHeader: React.FC = () => {
 
                         {isDropdownOpen && (
                             <div className="absolute right-0 mt-6 w-48 bg-white border border-gray-100 shadow-xl rounded-md py-2 z-50 flex flex-col dropdown-anim">
+                                {activeUser?.role === 'admin' && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setIsDropdownOpen(false); router.push('/admin'); }}
+                                            className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-wider text-amber-600 hover:bg-amber-50 hover:text-amber-800 transition-colors text-left"
+                                        >
+                                            <ShieldCheck className="w-4 h-4" /> Admin Portal
+                                        </button>
+                                        <div className="border-t border-gray-100 my-1"></div>
+                                    </>
+                                )}
                                 <button
                                     type="button"
                                     onClick={() => { setIsDropdownOpen(false); router.push('/detail'); }}
@@ -183,8 +195,8 @@ const UserHeader: React.FC = () => {
 // (Đã thêm)
 const UserFooter: React.FC = () => {
     const pathname = usePathname();
-    const isAuthPage = AUTH_ROUTES.some((route) => pathname?.startsWith(route));
-    if (isAuthPage) return null;
+    const isHiddenPage = HIDDEN_HEADER_FOOTER_ROUTES.some((route) => pathname?.startsWith(route));
+    if (isHiddenPage) return null;
     return <Footer />;
 };
 

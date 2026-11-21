@@ -149,7 +149,13 @@ export default function UserDetailPage() {
 
                 if (itineraryRes.ok) {
                     const itinData = await itineraryRes.json();
-                    if (!isCancelled) setItinerary(itinData.data || null);
+                    if (!isCancelled) {
+                        const d = itinData.data;
+                        setItinerary(d ? {
+                            upcoming: d.upcoming || d.upcomingTrips || [],
+                            past: d.past || d.pastTrips || [],
+                        } : null);
+                    }
                 }
 
                 if (favoritesRes.ok) {

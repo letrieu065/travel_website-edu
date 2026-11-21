@@ -207,10 +207,22 @@ export default function HotelDetailPage({
             return;
         }
 
-        setBookingSuccess(true);
-        setTimeout(() => {
-            router.push('/login');
-        }, 2000);
+        const pricePerNight = Number(hotel?.discount_price ?? hotel?.price_per_night ?? 0);
+        const nights = availability?.nights || 1;
+        const totalPrice = pricePerNight * nights * rooms;
+
+        const checkoutParams = new URLSearchParams({
+            type: 'hotel',
+            hotel_id: hotel?.id || hotelId,
+            guests: String(rooms),
+            nights: String(nights),
+            check_in: checkIn,
+            check_out: checkOut,
+            price: String(totalPrice),
+            title: hotel?.name || 'Khách sạn Natura Travel',
+        });
+
+        router.push(`/checkout?${checkoutParams.toString()}`);
     };
 
     if (isLoading) {

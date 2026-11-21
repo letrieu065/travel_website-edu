@@ -206,10 +206,19 @@ export default function TourDetailPage({
             return;
         }
 
-        setBookingSuccess(true);
-        setTimeout(() => {
-            router.push('/login');
-        }, 2000);
+        const unitPrice = selectedDep ? Number(selectedDep.discount_price ?? selectedDep.price) : Number(tour?.discountPrice ?? tour?.price ?? 0);
+        const totalPrice = unitPrice * passengerCount;
+
+        const checkoutParams = new URLSearchParams({
+            type: 'tour',
+            tour_id: tour?.id || tourId,
+            departure_id: selectedDepartureId || '',
+            guests: String(passengerCount),
+            price: String(totalPrice),
+            title: tour?.title || 'Tour du lịch Natura Travel',
+        });
+
+        router.push(`/checkout?${checkoutParams.toString()}`);
     };
 
     if (isLoading) {
