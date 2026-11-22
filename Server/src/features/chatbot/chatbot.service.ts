@@ -17,10 +17,6 @@ export interface SupportTicketInput {
     content: string;
 }
 
-// TODO: Thêm bảng chat_messages và support_tickets vào schema.prisma để lưu vào PostgreSQL
-const chatHistoryStore = new Map<string, Array<{ role: 'user' | 'bot'; message: string; timestamp: string }>>();
-const supportTicketStore: any[] = [];
-
 const DEFAULT_FAQS = [
     {
         id: 'faq_1',
@@ -44,16 +40,16 @@ const DEFAULT_FAQS = [
     },
 ];
 
-/* ============================== SERVICE METHODS ============================== */
-
 const sendMessage = async (input: ChatMessageInput) => {
-    const history = chatHistoryStore.get(input.session_id) ?? [];
-    const userMsg = {
-        role: 'user' as const,
-        message: input.message,
-        timestamp: new Date().toISOString(),
-    };
-    history.push(userMsg);
+    // Lưu tin nhắn người dùng vào PostgreSQL
+    await prisma.chat_history.create({
+        data: {
+            session_id: input.session_id,
+            user_id: input.user_id,
+            role: 'user',
+            content: input.message,
+        },
+    });
 
     const lower = input.message.toLowerCase();
     let botReply =
@@ -79,19 +75,21 @@ const sendMessage = async (input: ChatMessageInput) => {
             'Natura Travel có hỗ trợ gói Vay đi du lịch / trả góp linh hoạt. Bạn có thể đăng ký hồ sơ ngay ở bước thanh toán hoặc mục Hỗ trợ tài chính.';
     }
 
-    const botMsg = {
-        role: 'bot' as const,
-        message: botReply,
-        timestamp: new Date().toISOString(),
-    };
-    history.push(botMsg);
-    chatHistoryStore.set(input.session_id, history);
+    // Lưu phản hồi bot vào PostgreSQL
+    const botRecord = await prisma.chat_history.create({
+        data: {
+            session_id: input.session_id,
+            user_id: input.user_id,
+            role: 'bot',
+            content: botReply,
+        },
+    });
 
     return {
         session_id: input.session_id,
         reply: botReply,
         suggested_tours: suggestedTours,
-        timestamp: botMsg.timestamp,
+        timestamp: botRecord.created_at ? botRecord.created_at.toISOString() : new Date().toISOString(),
     };
 };
 
@@ -100,18 +98,32 @@ const getFaqs = async () => {
 };
 
 const getChatHistory = async (sessionId: string) => {
-    return chatHistoryStore.get(sessionId) ?? [];
+    if (!sessionId || sessionId === 'default_session') return [];
+
+    const records = await prisma.chat_history.findMany({
+        where: { session_id: sessionId },
+        orderBy: { created_at: 'asc' },
+    });
+
+    return records.map((r) => ({
+        role: r.role as 'user' | 'bot',
+        message: r.content,
+        timestamp: r.created_at ? r.created_at.toISOString() : new Date().toISOString(),
+    }));
 };
 
 const createSupportTicket = async (input: SupportTicketInput) => {
-    const ticket = {
-        id: `TKT_${Date.now()}`,
-        ...input,
-        status: 'open',
-        created_at: new Date().toISOString(),
-    };
-    supportTicketStore.push(ticket);
-    return ticket;
+    return prisma.support_tickets.create({
+        data: {
+            user_id: input.user_id,
+            full_name: input.full_name,
+            email: input.email,
+            phone_number: input.phone_number,
+            subject: input.subject,
+            content: input.content,
+            status: 'open',
+        },
+    });
 };
 
 export default {

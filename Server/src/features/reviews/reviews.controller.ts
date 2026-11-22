@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import reviewsService, { ReviewItemType } from './reviews.service';
+import env from '../../config/env';
 
 // (Đã thêm)
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
@@ -17,22 +18,22 @@ const getParam = (param: string | string[] | undefined): string => {
 // (Đã thêm)
 const extractUserId = (req: Request): string => {
     const reqUser = (req as any).user;
-    if (reqUser?.userId) return reqUser.userId;
     if (reqUser?.id) return reqUser.id;
+    if (reqUser?.userId) return reqUser.userId;
 
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
             const token = authHeader.split(' ')[1];
-            const secret = process.env.JWT_SECRET || 'default_secret_key';
+            const secret = env.JWT_SECRET;
             const decoded: any = jwt.verify(token, secret);
-            return decoded.userId || decoded.id || '';
+            return decoded.id || decoded.userId || '';
         } catch {
             return '';
         }
     }
 
-    return (req.query.user_id as string) || (req.body?.user_id as string) || '';
+    return '';
 };
 
 /* ============================== CONTROLLERS ============================== */
@@ -83,11 +84,16 @@ const createReview = async (req: Request, res: Response) => {
             return res.status(400).json({ status: 'error', message: 'Thiếu thông tin hoặc item_type/rating không hợp lệ' });
         }
 
+        const numRating = Number(rating);
+        if (!Number.isInteger(numRating) || numRating < 1 || numRating > 5) {
+            return res.status(400).json({ status: 'error', message: 'Điểm đánh giá phải từ 1 đến 5' });
+        }
+
         const review = await reviewsService.createReview({
             user_id: userId,
             item_id,
             item_type,
-            rating: Number(rating),
+            rating: numRating,
             comment,
             media_urls,
         });

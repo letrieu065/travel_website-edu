@@ -70,27 +70,45 @@ const getHotels = (params) => __awaiter(void 0, void 0, void 0, function* () {
     if (params.amenities && params.amenities.length > 0) {
         where.amenities = { hasEvery: params.amenities };
     }
-    const hotelsRaw = yield prisma_1.default.hotels.findMany({
-        where,
-        orderBy: { created_at: 'desc' },
-        include: {
-            hotel_images: { orderBy: { sort_order: 'asc' } },
-        },
-    });
-    let formatted = yield attachHotelMetrics(hotelsRaw);
+    // Sắp xếp trực tiếp ở database level
+    let orderBy = { created_at: 'desc' };
     if (params.sort === 'price_asc') {
-        formatted.sort((a, b) => { var _a, _b; return ((_a = a.discount_price) !== null && _a !== void 0 ? _a : a.price_per_night) - ((_b = b.discount_price) !== null && _b !== void 0 ? _b : b.price_per_night); });
+        orderBy = { price_per_night: 'asc' };
     }
     else if (params.sort === 'price_desc') {
-        formatted.sort((a, b) => { var _a, _b; return ((_a = b.discount_price) !== null && _a !== void 0 ? _a : b.price_per_night) - ((_b = a.discount_price) !== null && _b !== void 0 ? _b : a.price_per_night); });
+        orderBy = { price_per_night: 'desc' };
     }
     else if (params.sort === 'star_desc') {
-        formatted.sort((a, b) => { var _a, _b; return ((_a = b.star_rating) !== null && _a !== void 0 ? _a : 0) - ((_b = a.star_rating) !== null && _b !== void 0 ? _b : 0); });
+        orderBy = { star_rating: 'desc' };
     }
-    else if (params.sort === 'rating_desc') {
-        formatted.sort((a, b) => b.averageRating - a.averageRating);
+    if (params.sort !== 'rating_desc') {
+        const [total, hotelsRaw] = yield Promise.all([
+            prisma_1.default.hotels.count({ where }),
+            prisma_1.default.hotels.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy,
+                include: {
+                    hotel_images: { orderBy: { sort_order: 'asc' } },
+                },
+            }),
+        ]);
+        const formatted = yield attachHotelMetrics(hotelsRaw);
+        return { hotels: formatted, total, page, limit };
     }
-    const total = formatted.length;
+    const [total, hotelsRaw] = yield Promise.all([
+        prisma_1.default.hotels.count({ where }),
+        prisma_1.default.hotels.findMany({
+            where,
+            orderBy: { star_rating: 'desc' },
+            include: {
+                hotel_images: { orderBy: { sort_order: 'asc' } },
+            },
+        }),
+    ]);
+    let formatted = yield attachHotelMetrics(hotelsRaw);
+    formatted.sort((a, b) => b.averageRating - a.averageRating);
     const hotels = formatted.slice(skip, skip + limit);
     return { hotels, total, page, limit };
 });
@@ -107,14 +125,13 @@ const getTrendingHotels = (...args_1) => __awaiter(void 0, [...args_1], void 0, 
 });
 const getTopHotels = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (limit = 6) {
     const hotelsRaw = yield prisma_1.default.hotels.findMany({
+        take: limit,
         orderBy: { star_rating: 'desc' },
         include: {
             hotel_images: { orderBy: { sort_order: 'asc' } },
         },
     });
-    const formatted = yield attachHotelMetrics(hotelsRaw);
-    formatted.sort((a, b) => b.averageRating - a.averageRating);
-    return formatted.slice(0, limit);
+    return attachHotelMetrics(hotelsRaw);
 });
 const getHotelById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const hotel = yield prisma_1.default.hotels.findUnique({

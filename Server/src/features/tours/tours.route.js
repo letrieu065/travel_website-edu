@@ -10,6 +10,7 @@ const router = express_1.default.Router();
 router.get('/featured', tours_controller_1.default.getFeaturedTours);
 router.get('/trending', tours_controller_1.default.getTrendingTours);
 router.get('/promotions', tours_controller_1.default.getPromotionTours);
+router.get('/promotion', tours_controller_1.default.getPromotionTours);
 router.get('/top-reviews', tours_controller_1.default.getTopTourReviews);
 // Tìm kiếm, lọc, chi tiết tour
 router.get('/', tours_controller_1.default.getTours);

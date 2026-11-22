@@ -37,10 +37,12 @@ const getFlights = (params) => __awaiter(void 0, void 0, void 0, function* () {
         where.available_seats = { gt: 0 };
     }
     if (params.departure_date) {
-        const startOfDay = new Date(params.departure_date);
-        startOfDay.setUTCHours(0, 0, 0, 0);
-        const endOfDay = new Date(params.departure_date);
-        endOfDay.setUTCHours(23, 59, 59, 999);
+        // Chuyển đổi ngày tìm kiếm sang trọn vẹn 24h theo múi giờ Việt Nam (UTC+7):
+        // 00:00:00 VN (UTC+7) tương đương 17:00:00Z ngày hôm trước
+        // 23:59:59.999 VN (UTC+7) tương đương 16:59:59.999Z ngày hiện tại
+        const dateStr = params.departure_date.split('T')[0];
+        const startOfDay = new Date(`${dateStr}T00:00:00+07:00`);
+        const endOfDay = new Date(`${dateStr}T23:59:59.999+07:00`);
         where.departure_time = { gte: startOfDay, lte: endOfDay };
     }
     if (params.min_price !== undefined || params.max_price !== undefined) {
@@ -68,17 +70,18 @@ const getFlights = (params) => __awaiter(void 0, void 0, void 0, function* () {
             include: { planes: true },
         }),
     ]);
-    const flights = items.map((f) => (Object.assign(Object.assign({}, f), { ticket_price: Number(f.ticket_price) })));
+    const flights = items.map((f) => { var _a; return (Object.assign(Object.assign({}, f), { flight_number: ((_a = f.planes) === null || _a === void 0 ? void 0 : _a.plane_number) || '', ticket_price: Number(f.ticket_price) })); });
     return { flights, total, page, limit };
 });
 const getFlightById = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const flight = yield prisma_1.default.flights.findUnique({
         where: { id },
         include: { planes: true },
     });
     if (!flight)
         return null;
-    return Object.assign(Object.assign({}, flight), { ticket_price: Number(flight.ticket_price) });
+    return Object.assign(Object.assign({}, flight), { flight_number: ((_a = flight.planes) === null || _a === void 0 ? void 0 : _a.plane_number) || '', ticket_price: Number(flight.ticket_price) });
 });
 const getAirlines = () => __awaiter(void 0, void 0, void 0, function* () {
     const planes = yield prisma_1.default.planes.findMany({
@@ -89,13 +92,20 @@ const getAirlines = () => __awaiter(void 0, void 0, void 0, function* () {
     return planes.map((p) => p.airline);
 });
 const getAirports = () => __awaiter(void 0, void 0, void 0, function* () {
-    const flights = yield prisma_1.default.flights.findMany({
-        select: { departure_airport: true, arrival_airport: true },
+    const departures = yield prisma_1.default.flights.findMany({
+        distinct: ['departure_airport'],
+        select: { departure_airport: true },
+    });
+    const arrivals = yield prisma_1.default.flights.findMany({
+        distinct: ['arrival_airport'],
+        select: { arrival_airport: true },
     });
     const airportSet = new Set();
-    flights.forEach((f) => {
+    departures.forEach((f) => {
         if (f.departure_airport)
             airportSet.add(f.departure_airport);
+    });
+    arrivals.forEach((f) => {
         if (f.arrival_airport)
             airportSet.add(f.arrival_airport);
     });

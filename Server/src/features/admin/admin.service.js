@@ -17,7 +17,8 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 // (Đã thêm)
 const getPagination = (params) => {
     const page = Math.max(1, Number(params.page) || 1);
-    const limit = Math.max(1, Number(params.limit) || 10);
+    const rawLimit = Number(params.limit);
+    const limit = !isNaN(rawLimit) && rawLimit > 0 ? rawLimit : 10;
     const skip = (page - 1) * limit;
     return { page, limit, skip };
 };
@@ -63,7 +64,7 @@ const getUsers = (params) => __awaiter(void 0, void 0, void 0, function* () {
             },
         }),
     ]);
-    return { items, total, page, limit };
+    return { items, users: items, total, page, limit };
 });
 const getUserById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return prisma_1.default.users.findUnique({
@@ -93,16 +94,21 @@ const getUserById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     });
 });
 const createUser = (data) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!data.password || typeof data.password !== 'string') {
+        throw new Error('Mật khẩu là bắt buộc khi tạo tài khoản người dùng mới');
+    }
+    // Kiểm tra độ mạnh mật khẩu: tối thiểu 8 ký tự, ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số, 1 ký tự đặc biệt
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,}$/;
+    if (!strongPasswordRegex.test(data.password)) {
+        throw new Error('Mật khẩu phải có tối thiểu 8 ký tự, bao gồm ít nhất 1 chữ cái hoa, 1 chữ cái thường, 1 chữ số và 1 ký tự đặc biệt');
+    }
     const existing = yield prisma_1.default.users.findUnique({
         where: { email: data.email },
     });
     if (existing) {
         throw new Error('Email đã được sử dụng');
     }
-    let password_hash;
-    if (data.password) {
-        password_hash = yield bcrypt_1.default.hash(data.password, 10);
-    }
+    const password_hash = yield bcrypt_1.default.hash(data.password, 10);
     return prisma_1.default.users.create({
         data: {
             email: data.email,
@@ -204,7 +210,7 @@ const getTours = (params) => __awaiter(void 0, void 0, void 0, function* () {
             },
         }),
     ]);
-    return { items, total, page, limit };
+    return { items, tours: items, total, page, limit };
 });
 const getTourById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return prisma_1.default.tours.findUnique({
@@ -347,7 +353,7 @@ const getHotels = (params) => __awaiter(void 0, void 0, void 0, function* () {
             },
         }),
     ]);
-    return { items, total, page, limit };
+    return { items, hotels: items, total, page, limit };
 });
 const getHotelById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return prisma_1.default.hotels.findUnique({
@@ -496,7 +502,7 @@ const getFlights = (params) => __awaiter(void 0, void 0, void 0, function* () {
             },
         }),
     ]);
-    return { items, total, page, limit };
+    return { items, flights: items, total, page, limit };
 });
 const getFlightById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return prisma_1.default.flights.findUnique({
@@ -572,7 +578,7 @@ const getBookings = (params) => __awaiter(void 0, void 0, void 0, function* () {
             },
         }),
     ]);
-    return { items, total, page, limit };
+    return { items, bookings: items, total, page, limit };
 });
 const getBookingById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return prisma_1.default.bookings.findUnique({
@@ -769,41 +775,53 @@ const getDashboardStats = () => __awaiter(void 0, void 0, void 0, function* () {
 const getRevenueStats = (params) => __awaiter(void 0, void 0, void 0, function* () {
     const from = new Date(params.from_date);
     const to = new Date(params.to_date);
-    const payments = yield prisma_1.default.payments.findMany({
-        where: {
-            payment_status: 'paid',
-            payment_date: {
-                gte: from,
-                lte: to,
-            },
-        },
-        orderBy: { payment_date: 'asc' },
-    });
-    const grouped = {};
-    payments.forEach((payment) => {
-        if (!payment.payment_date)
-            return;
-        const d = new Date(payment.payment_date);
-        let key = '';
-        if (params.group_by === 'year') {
-            key = `${d.getFullYear()}`;
-        }
-        else if (params.group_by === 'month') {
-            key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        }
-        else {
-            key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }
-        if (!grouped[key]) {
-            grouped[key] = { revenue: 0, count: 0 };
-        }
-        grouped[key].revenue += Number(payment.amount);
-        grouped[key].count += 1;
-    });
-    return Object.entries(grouped).map(([date, data]) => ({
-        date,
-        revenue: data.revenue,
-        count: data.count,
+    let rows;
+    if (params.group_by === 'year') {
+        rows = yield prisma_1.default.$queryRaw `
+            SELECT 
+                TO_CHAR(DATE_TRUNC('year', payment_date), 'YYYY') as date,
+                COALESCE(SUM(amount), 0)::float as revenue,
+                COUNT(*)::int as count
+            FROM payments
+            WHERE payment_status = 'paid'
+              AND payment_date >= ${from}
+              AND payment_date <= ${to}
+            GROUP BY 1
+            ORDER BY 1 ASC
+        `;
+    }
+    else if (params.group_by === 'month') {
+        rows = yield prisma_1.default.$queryRaw `
+            SELECT 
+                TO_CHAR(DATE_TRUNC('month', payment_date), 'YYYY-MM') as date,
+                COALESCE(SUM(amount), 0)::float as revenue,
+                COUNT(*)::int as count
+            FROM payments
+            WHERE payment_status = 'paid'
+              AND payment_date >= ${from}
+              AND payment_date <= ${to}
+            GROUP BY 1
+            ORDER BY 1 ASC
+        `;
+    }
+    else {
+        rows = yield prisma_1.default.$queryRaw `
+            SELECT 
+                TO_CHAR(DATE_TRUNC('day', payment_date), 'YYYY-MM-DD') as date,
+                COALESCE(SUM(amount), 0)::float as revenue,
+                COUNT(*)::int as count
+            FROM payments
+            WHERE payment_status = 'paid'
+              AND payment_date >= ${from}
+              AND payment_date <= ${to}
+            GROUP BY 1
+            ORDER BY 1 ASC
+        `;
+    }
+    return rows.map((r) => ({
+        date: r.date,
+        revenue: Number(r.revenue),
+        count: Number(r.count),
     }));
 });
 const getTopItems = (params) => __awaiter(void 0, void 0, void 0, function* () {
@@ -826,26 +844,59 @@ const getTopItems = (params) => __awaiter(void 0, void 0, void 0, function* () {
         take: limit,
     });
     const itemIds = grouped.map((g) => g.item_id);
-    let itemsDetails = [];
+    const detailsMap = new Map();
     if (params.item_type === 'tour') {
-        itemsDetails = yield prisma_1.default.tours.findMany({
-            where: { id: { in: itemIds } },
-            include: { tour_images: { take: 1, orderBy: { sort_order: 'asc' } } },
-        });
+        // Trong booking_items, item_id của tour thường lưu ID của tour_departures.
+        // Cần truy vấn cả tour_departures (kèm tour cha và ảnh) lẫn tours trực tiếp để đảm bảo không bị null.
+        const [departures, directTours] = yield Promise.all([
+            prisma_1.default.tour_departures.findMany({
+                where: { id: { in: itemIds } },
+                include: {
+                    tours: {
+                        include: { tour_images: { take: 1, orderBy: { sort_order: 'asc' } } },
+                    },
+                },
+            }),
+            prisma_1.default.tours.findMany({
+                where: { id: { in: itemIds } },
+                include: { tour_images: { take: 1, orderBy: { sort_order: 'asc' } } },
+            }),
+        ]);
+        for (const t of directTours) {
+            detailsMap.set(t.id, t);
+        }
+        for (const dep of departures) {
+            if (dep.tours) {
+                detailsMap.set(dep.id, Object.assign(Object.assign({}, dep.tours), { departure: {
+                        id: dep.id,
+                        start_date: dep.start_date,
+                        price: dep.price,
+                        discount_price: dep.discount_price,
+                    } }));
+            }
+            else {
+                detailsMap.set(dep.id, dep);
+            }
+        }
     }
     else if (params.item_type === 'hotel') {
-        itemsDetails = yield prisma_1.default.hotels.findMany({
+        const itemsDetails = yield prisma_1.default.hotels.findMany({
             where: { id: { in: itemIds } },
             include: { hotel_images: { take: 1, orderBy: { sort_order: 'asc' } } },
         });
+        for (const item of itemsDetails) {
+            detailsMap.set(item.id, item);
+        }
     }
     else if (params.item_type === 'flight') {
-        itemsDetails = yield prisma_1.default.flights.findMany({
+        const itemsDetails = yield prisma_1.default.flights.findMany({
             where: { id: { in: itemIds } },
             include: { planes: true },
         });
+        for (const item of itemsDetails) {
+            detailsMap.set(item.id, item);
+        }
     }
-    const detailsMap = new Map(itemsDetails.map((item) => [item.id, item]));
     return grouped.map((g) => { var _a, _b; return ({
         item: (_a = detailsMap.get(g.item_id)) !== null && _a !== void 0 ? _a : null,
         totalBooked: (_b = g._sum.quantity) !== null && _b !== void 0 ? _b : 0,

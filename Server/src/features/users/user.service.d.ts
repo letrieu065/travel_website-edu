@@ -36,7 +36,57 @@ declare const changePassword: (userId: string, data: ChangePasswordData) => Prom
     message: string;
 }>;
 declare const getMyItinerary: (userId: string) => Promise<{
+    upcoming: ({
+        booking_items: {
+            booking_id: string;
+            item_type: string;
+            quantity: number;
+            unit_price: import("@prisma/client-runtime-utils").Decimal;
+            check_in: Date | null;
+            check_out: Date | null;
+            item_id: string;
+        }[];
+        payments: {
+            id: string;
+            booking_id: string | null;
+            amount: import("@prisma/client-runtime-utils").Decimal;
+            payment_method: string;
+            transaction_id: string | null;
+            payment_status: string | null;
+            payment_date: Date | null;
+        }[];
+    } & {
+        id: string;
+        user_id: string | null;
+        total_price: import("@prisma/client-runtime-utils").Decimal;
+        created_at: Date | null;
+    })[];
     upcomingTrips: ({
+        booking_items: {
+            booking_id: string;
+            item_type: string;
+            quantity: number;
+            unit_price: import("@prisma/client-runtime-utils").Decimal;
+            check_in: Date | null;
+            check_out: Date | null;
+            item_id: string;
+        }[];
+        payments: {
+            id: string;
+            booking_id: string | null;
+            amount: import("@prisma/client-runtime-utils").Decimal;
+            payment_method: string;
+            transaction_id: string | null;
+            payment_status: string | null;
+            payment_date: Date | null;
+        }[];
+    } & {
+        id: string;
+        user_id: string | null;
+        total_price: import("@prisma/client-runtime-utils").Decimal;
+        created_at: Date | null;
+    })[];
+    past: ({
         booking_items: {
             booking_id: string;
             item_type: string;
@@ -126,9 +176,18 @@ declare const getItineraryDetail: (userId: string, bookingId: string) => Promise
     total_price: import("@prisma/client-runtime-utils").Decimal;
     created_at: Date | null;
 }) | null>;
-declare const getFavorites: (userId: string) => Promise<FavoriteItemData[]>;
-declare const addFavorite: (userId: string, item: FavoriteItemData) => Promise<FavoriteItemData[]>;
-declare const removeFavorite: (userId: string, itemType: string, itemId: string) => Promise<FavoriteItemData[]>;
+declare const getFavorites: (userId: string) => Promise<{
+    item_type: 'tour' | 'hotel' | 'flight';
+    item_id: string;
+}[]>;
+declare const addFavorite: (userId: string, item: FavoriteItemData) => Promise<{
+    item_type: 'tour' | 'hotel' | 'flight';
+    item_id: string;
+}[]>;
+declare const removeFavorite: (userId: string, itemType: string, itemId: string) => Promise<{
+    item_type: 'tour' | 'hotel' | 'flight';
+    item_id: string;
+}[]>;
 declare const _default: {
     getProfile: typeof getProfile;
     updateProfile: typeof updateProfile;

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import prisma from '../../config/prisma';
 
 /* ============================== TYPES ============================== */
 
@@ -9,7 +10,7 @@ export interface NotificationItem {
     title: string;
     message: string;
     is_read: boolean;
-    created_at: string;
+    created_at: string | Date | null;
 }
 
 export interface SendEmailInput {
@@ -17,9 +18,6 @@ export interface SendEmailInput {
     subject: string;
     html: string;
 }
-
-// TODO: Thêm bảng notifications vào schema.prisma để lưu vào PostgreSQL
-const notificationStore: NotificationItem[] = [];
 
 const CONTACT_CHANNELS = {
     company_name: 'Natura Travel Vietnam',
@@ -39,9 +37,12 @@ const CONTACT_CHANNELS = {
 /* ============================== SERVICE METHODS ============================== */
 
 const getMyNotifications = async (userId: string) => {
-    return notificationStore
-        .filter((n) => n.user_id === userId || n.user_id === 'all')
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return prisma.notifications.findMany({
+        where: {
+            OR: [{ user_id: userId }, { user_id: 'all' }],
+        },
+        orderBy: { created_at: 'desc' },
+    });
 };
 
 const createNotification = async (
@@ -50,37 +51,41 @@ const createNotification = async (
     title: string,
     message: string
 ) => {
-    const item: NotificationItem = {
-        id: `notif_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        user_id: userId,
-        type,
-        title,
-        message,
-        is_read: false,
-        created_at: new Date().toISOString(),
-    };
-    notificationStore.push(item);
-    return item;
+    return prisma.notifications.create({
+        data: {
+            user_id: userId,
+            type,
+            title,
+            message,
+            is_read: false,
+        },
+    });
 };
 
 const markAsRead = async (userId: string, notificationId: string) => {
-    const item = notificationStore.find(
-        (n) => n.id === notificationId && (n.user_id === userId || n.user_id === 'all')
-    );
+    const item = await prisma.notifications.findFirst({
+        where: {
+            id: notificationId,
+            OR: [{ user_id: userId }, { user_id: 'all' }],
+        },
+    });
     if (!item) return null;
-    item.is_read = true;
-    return item;
+
+    return prisma.notifications.update({
+        where: { id: notificationId },
+        data: { is_read: true },
+    });
 };
 
 const markAllAsRead = async (userId: string) => {
-    let count = 0;
-    notificationStore.forEach((n) => {
-        if ((n.user_id === userId || n.user_id === 'all') && !n.is_read) {
-            n.is_read = true;
-            count += 1;
-        }
+    const res = await prisma.notifications.updateMany({
+        where: {
+            OR: [{ user_id: userId }, { user_id: 'all' }],
+            is_read: false,
+        },
+        data: { is_read: true },
     });
-    return { updated_count: count };
+    return { updated_count: res.count };
 };
 
 const sendEmailNotification = async (input: SendEmailInput) => {

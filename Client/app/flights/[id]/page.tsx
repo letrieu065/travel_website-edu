@@ -105,6 +105,7 @@ function FlightDetailContent({
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState('');
     const [bookingSuccess, setBookingSuccess] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         let isCancelled = false;
@@ -144,25 +145,31 @@ function FlightDetailContent({
     }, [flightId]);
 
     // (Đã thêm)
-    const handleBookingSubmit = (e: React.FormEvent) => {
+    const handleBookingSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (flight && flight.available_seats < passengerCount) {
-            alert('Chuyến bay không đủ số lượng ghế trống theo yêu cầu.');
-            return;
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            if (flight && flight.available_seats < passengerCount) {
+                alert('Chuyến bay không đủ số lượng ghế trống theo yêu cầu.');
+                return;
+            }
+
+            const unitPrice = Number(flight?.ticket_price ?? 0);
+            const totalPrice = unitPrice * passengerCount;
+
+            const checkoutParams = new URLSearchParams({
+                type: 'flight',
+                flight_id: flight?.id || flightId,
+                guests: String(passengerCount),
+                price: String(totalPrice),
+                title: `Chuyến bay ${flight?.departure_airport || ''} -> ${flight?.arrival_airport || ''}`,
+            });
+
+            router.push(`/checkout?${checkoutParams.toString()}`);
+        } finally {
+            setIsSubmitting(false);
         }
-
-        const unitPrice = Number(flight?.ticket_price ?? 0);
-        const totalPrice = unitPrice * passengerCount;
-
-        const checkoutParams = new URLSearchParams({
-            type: 'flight',
-            flight_id: flight?.id || flightId,
-            guests: String(passengerCount),
-            price: String(totalPrice),
-            title: `Chuyến bay ${flight?.departure_airport || ''} -> ${flight?.arrival_airport || ''}`,
-        });
-
-        router.push(`/checkout?${checkoutParams.toString()}`);
     };
 
     if (isLoading) {
@@ -437,10 +444,17 @@ function FlightDetailContent({
                                 ) : (
                                     <button
                                         type="submit"
-                                        disabled={flight.available_seats < passengerCount}
-                                        className="w-full bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed py-3 px-4 text-xs font-black uppercase tracking-widest transition-colors shadow-md"
+                                        disabled={isSubmitting || flight.available_seats < passengerCount}
+                                        className="w-full bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed py-3 px-4 text-xs font-black uppercase tracking-widest transition-colors shadow-md flex items-center justify-center gap-2"
                                     >
-                                        Xác Nhận Đặt Vé
+                                        {isSubmitting ? (
+                                            <>
+                                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                Đang xử lý...
+                                            </>
+                                        ) : (
+                                            'Xác Nhận Đặt Vé'
+                                        )}
                                     </button>
                                 )}
                             </form>

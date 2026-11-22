@@ -57,11 +57,16 @@ const calculateFee = async (req: Request, res: Response) => {
 // body: { booking_id, package_id, guests }
 const attachInsuranceToBooking = async (req: Request, res: Response) => {
     try {
+        const userId = (req as any).user?.id || (req as any).user?.userId;
+        const role = (req as any).user?.role;
+        if (!userId) {
+            return res.status(401).json({ status: 'error', message: 'Chưa xác thực người dùng' });
+        }
         const { booking_id, package_id, guests = 1 } = req.body;
         if (!booking_id || !package_id) {
             return res.status(400).json({ status: 'error', message: 'Vui lòng cung cấp booking_id và package_id' });
         }
-        const data = await insurancesService.attachInsuranceToBooking(booking_id, package_id, Number(guests));
+        const data = await insurancesService.attachInsuranceToBooking(booking_id, package_id, Number(guests), userId, role);
         return res.status(200).json({ status: 'success', message: 'Đã thêm bảo hiểm vào đơn đặt chỗ', data });
     } catch (error) {
         return handleControllerError(res, error, 'Lỗi khi gắn bảo hiểm vào đơn hàng');

@@ -24,13 +24,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bookings_service_1 = __importDefault(require("./bookings.service"));
+const env_1 = __importDefault(require("../../config/env"));
 /**
  * Xử lý và chuẩn hóa lỗi cho các phương thức trong Controller
  * // (Đã thêm)
  */
 const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const msg = (error === null || error === void 0 ? void 0 : error.message) || defaultMessage;
+    // Phân loại mã lỗi HTTP phù hợp
+    if (msg.includes('Không tìm thấy')) {
+        return res.status(404).json({ status: 'error', message: msg });
+    }
+    if (msg.includes('đã được hủy') || msg.includes('hợp lệ') || msg.includes('phải') || msg.includes('không được')) {
+        return res.status(400).json({ status: 'error', message: msg });
+    }
+    if (msg.includes('không đủ') || msg.includes('hết chỗ') || msg.includes('không còn')) {
+        return res.status(409).json({ status: 'error', message: msg });
+    }
+    return res.status(500).json({ status: 'error', message: msg });
+};
+/**
+ * Kiểm tra chuỗi UUID hợp lệ
+ * // (Đã thêm)
+ */
+const isValidUUID = (id) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 };
 /**
  * Lấy giá trị tham số URL an toàn dạng string
@@ -46,25 +65,24 @@ const getParam = (param) => {
  * // (Đã thêm)
  */
 const extractUserId = (req) => {
-    var _a;
     const reqUser = req.user;
-    if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.userId)
-        return reqUser.userId;
     if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.id)
         return reqUser.id;
+    if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.userId)
+        return reqUser.userId;
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
             const token = authHeader.split(' ')[1];
-            const secret = process.env.JWT_SECRET || 'default_secret_key';
+            const secret = env_1.default.JWT_SECRET;
             const decoded = jsonwebtoken_1.default.verify(token, secret);
-            return decoded.userId || decoded.id || '';
+            return decoded.id || decoded.userId || '';
         }
-        catch (_b) {
+        catch (_a) {
             return '';
         }
     }
-    return req.query.user_id || ((_a = req.body) === null || _a === void 0 ? void 0 : _a.user_id) || '';
+    return '';
 };
 /* ============================== CONTROLLERS ============================== */
 /**
@@ -83,6 +101,41 @@ const createBooking = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const { items, payment_method, discount_amount } = req.body;
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ status: 'error', message: 'Vui lòng chọn ít nhất một dịch vụ' });
+        }
+        // Validate chi tiết từng dịch vụ trong danh sách
+        for (const item of items) {
+            if (!item || !['tour', 'hotel', 'flight'].includes(item.item_type)) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: `Loại dịch vụ không hợp lệ: ${(item === null || item === void 0 ? void 0 : item.item_type) || 'undefined'}. Hỗ trợ: tour, hotel, flight`,
+                });
+            }
+            const quantity = Number(item.quantity);
+            if (!Number.isInteger(quantity) || quantity <= 0) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Số lượng đặt phải là số nguyên dương lớn hơn 0',
+                });
+            }
+            if (item.item_type === 'hotel' && item.check_in && item.check_out) {
+                const checkInDate = new Date(item.check_in);
+                const checkOutDate = new Date(item.check_out);
+                if (checkOutDate.getTime() <= checkInDate.getTime()) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'Ngày trả phòng (check-out) phải sau ngày nhận phòng (check-in)',
+                    });
+                }
+            }
+        }
+        if (discount_amount !== undefined) {
+            const discountNum = Number(discount_amount);
+            if (isNaN(discountNum) || discountNum < 0) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Số tiền giảm giá không hợp lệ (không được là số âm)',
+                });
+            }
         }
         const booking = yield bookings_service_1.default.createBooking({
             user_id: userId,
@@ -130,6 +183,9 @@ const getBookingById = (req, res) => __awaiter(void 0, void 0, void 0, function*
         if (!userId) {
             return res.status(401).json({ status: 'error', message: 'Chưa xác thực người dùng' });
         }
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy đơn đặt chỗ (ID không hợp lệ)' });
+        }
         const booking = yield bookings_service_1.default.getBookingById(userId, id);
         if (!booking) {
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy đơn đặt chỗ' });
@@ -152,6 +208,9 @@ const cancelBooking = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const id = getParam(req.params.id);
         if (!userId) {
             return res.status(401).json({ status: 'error', message: 'Chưa xác thực người dùng' });
+        }
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy đơn đặt chỗ (ID không hợp lệ)' });
         }
         const result = yield bookings_service_1.default.cancelBooking(userId, id);
         return res.status(200).json(Object.assign({ status: 'success' }, result));

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Search, ShoppingCart, User, LogOut, Info, ChevronDown, ShieldCheck } from 'lucide-react';
+import { Search, ShoppingCart, User, LogOut, Info, ChevronDown, ShieldCheck, Menu, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setProfile, clearProfile, type UserProfile } from '@/redux/userSlice';
 import type { RootState } from '@/redux/store';
@@ -21,6 +21,7 @@ const UserHeader: React.FC = () => {
 
     const [localUser, setLocalUser] = useState<UserProfile | null>(null);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     // (Đã thêm)
@@ -45,11 +46,16 @@ const UserHeader: React.FC = () => {
     useEffect(() => {
         let isCancelled = false;
 
-        // (Đã thêm)
+        // Tải profile người dùng chỉ một lần khi có token và Redux store chưa có dữ liệu
         const fetchUserProfile = async () => {
             const token = localStorage.getItem('token');
             if (!token) {
                 if (!isCancelled) setLocalUser(null);
+                return;
+            }
+
+            // Nếu profile đã có sẵn trong Redux store, không cần gửi request thừa
+            if (reduxUser) {
                 return;
             }
 
@@ -82,7 +88,7 @@ const UserHeader: React.FC = () => {
         return () => {
             isCancelled = true;
         };
-    }, [dispatch, pathname, clearSessionAndRedirect]);
+    }, [dispatch, clearSessionAndRedirect, reduxUser]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -109,7 +115,7 @@ const UserHeader: React.FC = () => {
             </Link>
 
             <nav className="nav-links">
-                <Link href="/flights" className="nav-link-item">Destinations</Link>
+                <Link href="/tours" className="nav-link-item">Destinations</Link>
                 <Link href="/tours" className="nav-link-item">Tours</Link>
                 <Link href="/hotels" className="nav-link-item">Hotels</Link>
                 <Link href="/about-us" className="nav-link-item">About Us</Link>
@@ -187,7 +193,129 @@ const UserHeader: React.FC = () => {
                         Sign In
                     </button>
                 )}
+
+                {/* Mobile Menu Hamburger Button */}
+                <button
+                    type="button"
+                    onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
+                    className="md:hidden ml-2 p-1.5 text-gray-700 hover:text-black transition-colors"
+                    aria-label="Toggle mobile menu"
+                >
+                    {isMobileNavOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </button>
             </div>
+
+            {/* Mobile Navigation Drawer */}
+            {isMobileNavOpen && (
+                <div className="fixed inset-0 z-50 md:hidden bg-black/60 backdrop-blur-sm flex justify-end">
+                    <div className="w-72 h-full bg-white p-6 shadow-2xl flex flex-col justify-between overflow-y-auto">
+                        <div>
+                            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                                <span className="font-black text-sm uppercase tracking-wider text-black">NATURA TRAVEL</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsMobileNavOpen(false)}
+                                    className="p-1 text-gray-500 hover:text-black"
+                                    aria-label="Close menu"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <nav className="flex flex-col gap-2 py-6">
+                                <Link
+                                    href="/"
+                                    onClick={() => setIsMobileNavOpen(false)}
+                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
+                                >
+                                    Trang chủ
+                                </Link>
+                                <Link
+                                    href="/tours"
+                                    onClick={() => setIsMobileNavOpen(false)}
+                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
+                                >
+                                    Điểm Đến & Tours
+                                </Link>
+                                <Link
+                                    href="/hotels"
+                                    onClick={() => setIsMobileNavOpen(false)}
+                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
+                                >
+                                    Khách Sạn & Resort
+                                </Link>
+                                <Link
+                                    href="/flights"
+                                    onClick={() => setIsMobileNavOpen(false)}
+                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
+                                >
+                                    Vé Máy Bay
+                                </Link>
+                                <Link
+                                    href="/about-us"
+                                    onClick={() => setIsMobileNavOpen(false)}
+                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
+                                >
+                                    Về Chúng Tôi
+                                </Link>
+                            </nav>
+                        </div>
+
+                        <div className="pt-4 border-t border-gray-100">
+                            {activeUser ? (
+                                <div className="space-y-2">
+                                    <div className="text-xs font-semibold text-gray-500 truncate mb-2">
+                                        {displayName}
+                                    </div>
+                                    {activeUser.role === 'admin' && (
+                                        <Link
+                                            href="/admin"
+                                            onClick={() => setIsMobileNavOpen(false)}
+                                            className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-600 hover:text-amber-800 py-2"
+                                        >
+                                            <ShieldCheck className="w-4 h-4" /> Admin Portal
+                                        </Link>
+                                    )}
+                                    <Link
+                                        href="/detail"
+                                        onClick={() => setIsMobileNavOpen(false)}
+                                        className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-gray-700 hover:text-black py-2"
+                                    >
+                                        <User className="w-4 h-4" /> Thông tin cá nhân
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsMobileNavOpen(false);
+                                            handleLogout();
+                                        }}
+                                        className="flex items-center gap-2 w-full text-left text-xs font-black uppercase tracking-wider text-red-600 hover:text-red-800 py-2"
+                                    >
+                                        <LogOut className="w-4 h-4" /> Đăng xuất
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-2">
+                                    <Link
+                                        href="/login"
+                                        onClick={() => setIsMobileNavOpen(false)}
+                                        className="w-full text-center bg-black text-[#FACC15] py-2.5 text-xs font-black uppercase tracking-wider hover:bg-gray-800"
+                                    >
+                                        Đăng nhập
+                                    </Link>
+                                    <Link
+                                        href="/register"
+                                        onClick={() => setIsMobileNavOpen(false)}
+                                        className="w-full text-center border border-gray-200 py-2.5 text-xs font-black uppercase tracking-wider text-gray-700 hover:border-black"
+                                    >
+                                        Đăng ký
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </header>
     );
 };

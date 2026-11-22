@@ -12,6 +12,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bookingsService from './bookings.service';
+import env from '../../config/env';
 
 /**
  * Xử lý và chuẩn hóa lỗi cho các phương thức trong Controller
@@ -19,7 +20,26 @@ import bookingsService from './bookings.service';
  */
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const msg = error?.message || defaultMessage;
+    // Phân loại mã lỗi HTTP phù hợp
+    if (msg.includes('Không tìm thấy')) {
+        return res.status(404).json({ status: 'error', message: msg });
+    }
+    if (msg.includes('đã được hủy') || msg.includes('hợp lệ') || msg.includes('phải') || msg.includes('không được')) {
+        return res.status(400).json({ status: 'error', message: msg });
+    }
+    if (msg.includes('không đủ') || msg.includes('hết chỗ') || msg.includes('không còn')) {
+        return res.status(409).json({ status: 'error', message: msg });
+    }
+    return res.status(500).json({ status: 'error', message: msg });
+};
+
+/**
+ * Kiểm tra chuỗi UUID hợp lệ
+ * // (Đã thêm)
+ */
+const isValidUUID = (id: string): boolean => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 };
 
 /**
@@ -37,22 +57,22 @@ const getParam = (param: string | string[] | undefined): string => {
  */
 const extractUserId = (req: Request): string => {
     const reqUser = (req as any).user;
-    if (reqUser?.userId) return reqUser.userId;
     if (reqUser?.id) return reqUser.id;
+    if (reqUser?.userId) return reqUser.userId;
 
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
             const token = authHeader.split(' ')[1];
-            const secret = process.env.JWT_SECRET || 'default_secret_key';
+            const secret = env.JWT_SECRET;
             const decoded: any = jwt.verify(token, secret);
-            return decoded.userId || decoded.id || '';
+            return decoded.id || decoded.userId || '';
         } catch {
             return '';
         }
     }
 
-    return (req.query.user_id as string) || (req.body?.user_id as string) || '';
+    return '';
 };
 
 /* ============================== CONTROLLERS ============================== */
@@ -75,6 +95,45 @@ const createBooking = async (req: Request, res: Response) => {
             return res.status(400).json({ status: 'error', message: 'Vui lòng chọn ít nhất một dịch vụ' });
         }
 
+        // Validate chi tiết từng dịch vụ trong danh sách
+        for (const item of items) {
+            if (!item || !['tour', 'hotel', 'flight'].includes(item.item_type)) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: `Loại dịch vụ không hợp lệ: ${item?.item_type || 'undefined'}. Hỗ trợ: tour, hotel, flight`,
+                });
+            }
+
+            const quantity = Number(item.quantity);
+            if (!Number.isInteger(quantity) || quantity <= 0) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Số lượng đặt phải là số nguyên dương lớn hơn 0',
+                });
+            }
+
+            if (item.item_type === 'hotel' && item.check_in && item.check_out) {
+                const checkInDate = new Date(item.check_in);
+                const checkOutDate = new Date(item.check_out);
+                if (checkOutDate.getTime() <= checkInDate.getTime()) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'Ngày trả phòng (check-out) phải sau ngày nhận phòng (check-in)',
+                    });
+                }
+            }
+        }
+
+        if (discount_amount !== undefined) {
+            const discountNum = Number(discount_amount);
+            if (isNaN(discountNum) || discountNum < 0) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Số tiền giảm giá không hợp lệ (không được là số âm)',
+                });
+            }
+        }
+
         const booking = await bookingsService.createBooking({
             user_id: userId,
             items,
@@ -83,7 +142,7 @@ const createBooking = async (req: Request, res: Response) => {
         });
 
         return res.status(201).json({ status: 'success', message: 'Đặt chỗ thành công', booking });
-    } catch (error) {
+    } catch (error: any) {
         return handleControllerError(res, error, 'Lỗi khi tạo đơn đặt chỗ');
     }
 };
@@ -122,6 +181,9 @@ const getBookingById = async (req: Request, res: Response) => {
         if (!userId) {
             return res.status(401).json({ status: 'error', message: 'Chưa xác thực người dùng' });
         }
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy đơn đặt chỗ (ID không hợp lệ)' });
+        }
         const booking = await bookingsService.getBookingById(userId, id);
         if (!booking) {
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy đơn đặt chỗ' });
@@ -145,9 +207,12 @@ const cancelBooking = async (req: Request, res: Response) => {
         if (!userId) {
             return res.status(401).json({ status: 'error', message: 'Chưa xác thực người dùng' });
         }
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy đơn đặt chỗ (ID không hợp lệ)' });
+        }
         const result = await bookingsService.cancelBooking(userId, id);
         return res.status(200).json({ status: 'success', ...result });
-    } catch (error) {
+    } catch (error: any) {
         return handleControllerError(res, error, 'Lỗi khi hủy đơn đặt chỗ');
     }
 };

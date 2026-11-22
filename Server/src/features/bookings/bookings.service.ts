@@ -33,6 +33,7 @@ export interface CreateBookingData {
     items: BookingItemInput[];
     payment_method?: string;
     discount_amount?: number;
+    coupon_code?: string;
 }
 
 /**
@@ -41,7 +42,8 @@ export interface CreateBookingData {
  */
 const getPagination = (pageInput: number, limitInput: number) => {
     const page = Math.max(1, Number(pageInput) || 1);
-    const limit = Math.max(1, Number(limitInput) || 10);
+    const rawLimit = Number(limitInput);
+    const limit = !isNaN(rawLimit) && rawLimit > 0 ? rawLimit : 10;
     const skip = (page - 1) * limit;
     return { page, limit, skip };
 };
@@ -65,7 +67,10 @@ const createBooking = async (data: CreateBookingData) => {
         const preparedItems: any[] = [];
 
         for (const item of data.items) {
-            const quantity = Math.max(1, Number(item.quantity) || 1);
+            const quantity = Number(item.quantity);
+            if (!Number.isInteger(quantity) || quantity <= 0) {
+                throw new Error('Số lượng đặt phải là số nguyên dương lớn hơn 0');
+            }
             let unitPrice = 0;
             let resolvedItemId = item.item_id;
             let checkInDate: Date | null = item.check_in ? new Date(item.check_in) : null;
@@ -87,15 +92,16 @@ const createBooking = async (data: CreateBookingData) => {
                 if (!departure) {
                     throw new Error(`Không tìm thấy lịch khởi hành phù hợp cho tour ${item.item_id}`);
                 }
-                if (departure.available_seats < quantity) {
-                    throw new Error(`Tour không đủ chỗ trống (chỉ còn ${departure.available_seats} chỗ)`);
-                }
 
-                // Trừ số lượng chỗ trống của lịch khởi hành tour
-                await tx.tour_departures.update({
-                    where: { id: departure.id },
+                // Cập nhật nguyên tử có điều kiện: Trừ số lượng chỗ trống chỉ khi available_seats >= quantity
+                const res = await tx.tour_departures.updateMany({
+                    where: { id: departure.id, available_seats: { gte: quantity } },
                     data: { available_seats: { decrement: quantity } },
                 });
+
+                if (res.count === 0) {
+                    throw new Error(`Tour không đủ chỗ trống (chỉ còn ${departure.available_seats} chỗ)`);
+                }
 
                 resolvedItemId = departure.id;
                 unitPrice = Number(departure.discount_price ?? departure.price);
@@ -106,18 +112,22 @@ const createBooking = async (data: CreateBookingData) => {
                 if (!hotel) {
                     throw new Error(`Không tìm thấy khách sạn ${item.item_id}`);
                 }
-                if (hotel.available_rooms < quantity) {
-                    throw new Error(`Khách sạn ${hotel.name} không đủ phòng trống (chỉ còn ${hotel.available_rooms} phòng)`);
-                }
 
-                // Trừ số lượng phòng trống của khách sạn
-                await tx.hotels.update({
-                    where: { id: hotel.id },
+                // Cập nhật nguyên tử có điều kiện: Trừ số lượng phòng chỉ khi available_rooms >= quantity
+                const res = await tx.hotels.updateMany({
+                    where: { id: hotel.id, available_rooms: { gte: quantity } },
                     data: { available_rooms: { decrement: quantity } },
                 });
 
+                if (res.count === 0) {
+                    throw new Error(`Khách sạn ${hotel.name} không đủ phòng trống (chỉ còn ${hotel.available_rooms} phòng)`);
+                }
+
                 let nights = 1;
                 if (checkInDate && checkOutDate) {
+                    if (checkOutDate.getTime() <= checkInDate.getTime()) {
+                        throw new Error('Ngày trả phòng (check-out) phải sau ngày nhận phòng (check-in)');
+                    }
                     const diffMs = checkOutDate.getTime() - checkInDate.getTime();
                     nights = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
                 }
@@ -129,15 +139,16 @@ const createBooking = async (data: CreateBookingData) => {
                 if (!flight) {
                     throw new Error(`Không tìm thấy chuyến bay ${item.item_id}`);
                 }
-                if (flight.available_seats < quantity) {
-                    throw new Error(`Chuyến bay không đủ ghế trống (chỉ còn ${flight.available_seats} ghế)`);
-                }
 
-                // Trừ số lượng ghế trống của chuyến bay
-                await tx.flights.update({
-                    where: { id: flight.id },
+                // Cập nhật nguyên tử có điều kiện: Trừ số lượng ghế chỉ khi available_seats >= quantity
+                const res = await tx.flights.updateMany({
+                    where: { id: flight.id, available_seats: { gte: quantity } },
                     data: { available_seats: { decrement: quantity } },
                 });
+
+                if (res.count === 0) {
+                    throw new Error(`Chuyến bay không đủ ghế trống (chỉ còn ${flight.available_seats} ghế)`);
+                }
 
                 unitPrice = Number(flight.ticket_price);
                 if (!checkInDate) checkInDate = flight.departure_time;
@@ -157,7 +168,29 @@ const createBooking = async (data: CreateBookingData) => {
             });
         }
 
-        const finalTotal = Math.max(0, totalPrice - (Number(data.discount_amount) || 0));
+        let discount = 0;
+        // Chặn thao túng số tiền giảm giá: Bỏ qua discount_amount gửi từ client.
+        // Chỉ chấp nhận coupon_code hợp lệ và tự tính toán giảm giá an toàn phía Server.
+        if (data.coupon_code) {
+            const code = data.coupon_code.trim().toUpperCase();
+            const VALID_COUPONS: Record<string, { type: 'percent' | 'fixed'; value: number; maxDiscount?: number }> = {
+                'WELCOME10': { type: 'percent', value: 10, maxDiscount: 200000 },
+                'SUMMER20': { type: 'percent', value: 20, maxDiscount: 500000 },
+                'TRAVEL50': { type: 'fixed', value: 50000 },
+            };
+            const coupon = VALID_COUPONS[code];
+            if (coupon) {
+                if (coupon.type === 'percent') {
+                    const rawDiscount = totalPrice * (coupon.value / 100);
+                    discount = coupon.maxDiscount ? Math.min(rawDiscount, coupon.maxDiscount) : rawDiscount;
+                } else {
+                    discount = Math.min(coupon.value, totalPrice);
+                }
+            } else {
+                throw new Error(`Mã giảm giá "${data.coupon_code}" không hợp lệ hoặc đã hết hạn`);
+            }
+        }
+        const finalTotal = Math.max(0, totalPrice - discount);
 
         // Tạo đơn đặt chỗ chính kèm chi tiết từng mục dịch vụ và thanh toán
         const booking = await tx.bookings.create({
@@ -231,60 +264,84 @@ const getBookingById = async (userId: string, bookingId: string) => {
  * Hủy đơn đặt chỗ và hoàn trả số lượng ghế / phòng khả dụng về kho
  * - Nếu đã thanh toán: Cập nhật payment_status thành 'refund_requested'
  * - Nếu chưa thanh toán: Chuyển payment_status sang 'failed'
- * - Tự động hoàn trả available_seats / available_rooms
+ * - Tự động hoàn trả available_seats / available_rooms trong Transaction nguyên tử
+ * - Chống Inventory Replay Attack: Kiểm tra đơn đã hủy trước đó
  * // (Đã thêm)
  */
 const cancelBooking = async (userId: string, bookingId: string) => {
-    const booking = await prisma.bookings.findFirst({
-        where: { id: bookingId, user_id: userId },
-        include: { booking_items: true, payments: true },
-    });
-
-    if (!booking) {
-        throw new Error('Không tìm thấy đơn đặt chỗ');
-    }
-
-    const isPaid = booking.payments.some((p) => p.payment_status === 'paid');
-    if (isPaid) {
-        await prisma.payments.updateMany({
-            where: { booking_id: bookingId, payment_status: 'paid' },
-            data: { payment_status: 'refund_requested' },
+    // Chạy toàn bộ quá trình kiểm tra đơn, cập nhật trạng thái thanh toán và hoàn trả kho trong Prisma Transaction
+    return prisma.$transaction(async (tx) => {
+        const booking = await tx.bookings.findFirst({
+            where: { id: bookingId, user_id: userId },
+            include: { booking_items: true, payments: true },
         });
-    } else {
-        await prisma.payments.updateMany({
-            where: { booking_id: bookingId },
-            data: { payment_status: 'failed' },
-        });
-    }
 
-    // Hoàn trả số chỗ / số phòng về kho
-    for (const item of booking.booking_items) {
-        if (item.item_type === 'tour') {
-            await prisma.tour_departures.updateMany({
-                where: { id: item.item_id },
-                data: { available_seats: { increment: item.quantity } },
-            });
-        } else if (item.item_type === 'hotel') {
-            await prisma.hotels.updateMany({
-                where: { id: item.item_id },
-                data: { available_rooms: { increment: item.quantity } },
-            });
-        } else if (item.item_type === 'flight') {
-            await prisma.flights.updateMany({
-                where: { id: item.item_id },
-                data: { available_seats: { increment: item.quantity } },
-            });
+        if (!booking) {
+            throw new Error('Không tìm thấy đơn đặt chỗ');
         }
-    }
 
-    return {
-        booking_id: bookingId,
-        cancelled: true,
-        refund_required: isPaid,
-        message: isPaid
-            ? 'Đã gửi yêu cầu hủy đơn và hoàn tiền'
-            : 'Đã hủy đơn đặt chỗ thành công',
-    };
+        // Kiểm tra xem đơn hàng đã từng bị hủy hoặc hoàn tiền chưa (chống replay attack)
+        const alreadyCancelled =
+            booking.payments.length > 0 &&
+            booking.payments.every(
+                (p) => p.payment_status === 'failed' || p.payment_status === 'refund_requested'
+            );
+
+        if (alreadyCancelled) {
+            throw new Error('Đơn đặt chỗ này đã được hủy trước đó');
+        }
+
+        const isPaid = booking.payments.some((p) => p.payment_status === 'paid');
+
+        // Cập nhật nguyên tử trạng thái thanh toán chỉ cho các bản ghi chưa bị hủy
+        let updateCount = 0;
+        if (isPaid) {
+            const res = await tx.payments.updateMany({
+                where: { booking_id: bookingId, payment_status: 'paid' },
+                data: { payment_status: 'refund_requested' },
+            });
+            updateCount = res.count;
+        } else {
+            const res = await tx.payments.updateMany({
+                where: { booking_id: bookingId, payment_status: { notIn: ['failed', 'refund_requested'] } },
+                data: { payment_status: 'failed' },
+            });
+            updateCount = res.count;
+        }
+
+        if (booking.payments.length > 0 && updateCount === 0) {
+            throw new Error('Đơn đặt chỗ này đã được hủy trước đó');
+        }
+
+        // Hoàn trả số chỗ / số phòng về kho an toàn
+        for (const item of booking.booking_items) {
+            if (item.item_type === 'tour') {
+                await tx.tour_departures.updateMany({
+                    where: { id: item.item_id },
+                    data: { available_seats: { increment: item.quantity } },
+                });
+            } else if (item.item_type === 'hotel') {
+                await tx.hotels.updateMany({
+                    where: { id: item.item_id },
+                    data: { available_rooms: { increment: item.quantity } },
+                });
+            } else if (item.item_type === 'flight') {
+                await tx.flights.updateMany({
+                    where: { id: item.item_id },
+                    data: { available_seats: { increment: item.quantity } },
+                });
+            }
+        }
+
+        return {
+            booking_id: bookingId,
+            cancelled: true,
+            refund_required: isPaid,
+            message: isPaid
+                ? 'Đã gửi yêu cầu hủy đơn và hoàn tiền'
+                : 'Đã hủy đơn đặt chỗ thành công',
+        };
+    });
 };
 
 export default {

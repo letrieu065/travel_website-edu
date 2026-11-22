@@ -42,10 +42,12 @@ const getFlights = async (params: FlightFilterParams) => {
     }
 
     if (params.departure_date) {
-        const startOfDay = new Date(params.departure_date);
-        startOfDay.setUTCHours(0, 0, 0, 0);
-        const endOfDay = new Date(params.departure_date);
-        endOfDay.setUTCHours(23, 59, 59, 999);
+        // Chuyển đổi ngày tìm kiếm sang trọn vẹn 24h theo múi giờ Việt Nam (UTC+7):
+        // 00:00:00 VN (UTC+7) tương đương 17:00:00Z ngày hôm trước
+        // 23:59:59.999 VN (UTC+7) tương đương 16:59:59.999Z ngày hiện tại
+        const dateStr = params.departure_date.split('T')[0];
+        const startOfDay = new Date(`${dateStr}T00:00:00+07:00`);
+        const endOfDay = new Date(`${dateStr}T23:59:59.999+07:00`);
         where.departure_time = { gte: startOfDay, lte: endOfDay };
     }
 
@@ -82,6 +84,7 @@ const getFlights = async (params: FlightFilterParams) => {
 
     const flights = items.map((f) => ({
         ...f,
+        flight_number: f.planes?.plane_number || '',
         ticket_price: Number(f.ticket_price),
     }));
 
@@ -97,6 +100,7 @@ const getFlightById = async (id: string) => {
 
     return {
         ...flight,
+        flight_number: flight.planes?.plane_number || '',
         ticket_price: Number(flight.ticket_price),
     };
 };
@@ -111,12 +115,19 @@ const getAirlines = async () => {
 };
 
 const getAirports = async () => {
-    const flights = await prisma.flights.findMany({
-        select: { departure_airport: true, arrival_airport: true },
+    const departures = await prisma.flights.findMany({
+        distinct: ['departure_airport'],
+        select: { departure_airport: true },
+    });
+    const arrivals = await prisma.flights.findMany({
+        distinct: ['arrival_airport'],
+        select: { arrival_airport: true },
     });
     const airportSet = new Set<string>();
-    flights.forEach((f) => {
+    departures.forEach((f) => {
         if (f.departure_airport) airportSet.add(f.departure_airport);
+    });
+    arrivals.forEach((f) => {
         if (f.arrival_airport) airportSet.add(f.arrival_airport);
     });
     return Array.from(airportSet).sort();

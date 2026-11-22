@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/prisma';
+import env from '../config/env';
 
 export interface AuthUserPayload {
     id: string;
@@ -25,7 +26,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
         }
 
         const token = authHeader.split(' ')[1];
-        const secret = process.env.JWT_SECRET || 'default_secret_key';
+        const secret = env.JWT_SECRET;
 
         const decoded: any = jwt.verify(token, secret);
         const userId = decoded.userId || decoded.id;
@@ -98,7 +99,7 @@ export const optionalAuthenticate = async (req: AuthRequest, res: Response, next
         }
 
         const token = authHeader.split(' ')[1];
-        const secret = process.env.JWT_SECRET || 'default_secret_key';
+        const secret = env.JWT_SECRET;
         const decoded: any = jwt.verify(token, secret);
         const userId = decoded.userId || decoded.id;
 

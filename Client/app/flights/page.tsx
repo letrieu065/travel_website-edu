@@ -12,7 +12,8 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
     Plane,
@@ -106,7 +107,8 @@ const calculateDuration = (startIso: string, endIso: string): string => {
     return `${hours}h ${minutes < 10 ? '0' : ''}${minutes}m`;
 };
 
-export default function FlightsPage() {
+function FlightsContent() {
+    const searchParams = useSearchParams();
     const [flights, setFlights] = useState<FlightItem[]>([]);
     const [airports, setAirports] = useState<string[]>([]);
     const [airlines, setAirlines] = useState<string[]>([]);
@@ -116,8 +118,18 @@ export default function FlightsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState('');
 
-    const [formFilters, setFormFilters] = useState<FlightFilterState>(initialFlightFilters);
-    const [appliedFilters, setAppliedFilters] = useState<FlightFilterState>(initialFlightFilters);
+    const initialFiltersFromUrl = useMemo((): FlightFilterState => ({
+        departureAirport: searchParams.get('departure_airport') || searchParams.get('departureAirport') || searchParams.get('from') || '',
+        arrivalAirport: searchParams.get('arrival_airport') || searchParams.get('arrivalAirport') || searchParams.get('to') || '',
+        departureDate: searchParams.get('departure_date') || searchParams.get('departureDate') || searchParams.get('date') || '',
+        passengers: searchParams.get('passengers') || '1',
+        airline: searchParams.get('airline') || '',
+        maxPrice: searchParams.get('max_price') || searchParams.get('maxPrice') || '',
+        sort: searchParams.get('sort') || 'departure_asc',
+    }), [searchParams]);
+
+    const [formFilters, setFormFilters] = useState<FlightFilterState>(initialFiltersFromUrl);
+    const [appliedFilters, setAppliedFilters] = useState<FlightFilterState>(initialFiltersFromUrl);
 
     // Tải danh sách sân bay và hãng hàng không
     useEffect(() => {
@@ -590,5 +602,18 @@ export default function FlightsPage() {
                 )}
             </main>
         </div>
+    );
+}
+
+function FlightsContentWrapper() {
+    const searchParams = useSearchParams();
+    return <FlightsContent key={searchParams.toString()} />;
+}
+
+export default function FlightsPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center text-xs font-black uppercase tracking-widest text-gray-500">Đang tải danh sách chuyến bay...</div>}>
+            <FlightsContentWrapper />
+        </Suspense>
     );
 }

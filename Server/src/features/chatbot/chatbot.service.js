@@ -13,9 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const prisma_1 = __importDefault(require("../../config/prisma"));
-// TODO: Thêm bảng chat_messages và support_tickets vào schema.prisma để lưu vào PostgreSQL
-const chatHistoryStore = new Map();
-const supportTicketStore = [];
 const DEFAULT_FAQS = [
     {
         id: 'faq_1',
@@ -38,16 +35,16 @@ const DEFAULT_FAQS = [
         answer: 'Ngay sau khi thanh toán thành công, hệ thống sẽ tự động gửi email xác nhận kèm mã đặt chỗ và lịch trình chi tiết về địa chỉ email của bạn.',
     },
 ];
-/* ============================== SERVICE METHODS ============================== */
 const sendMessage = (input) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    const history = (_a = chatHistoryStore.get(input.session_id)) !== null && _a !== void 0 ? _a : [];
-    const userMsg = {
-        role: 'user',
-        message: input.message,
-        timestamp: new Date().toISOString(),
-    };
-    history.push(userMsg);
+    // Lưu tin nhắn người dùng vào PostgreSQL
+    yield prisma_1.default.chat_history.create({
+        data: {
+            session_id: input.session_id,
+            user_id: input.user_id,
+            role: 'user',
+            content: input.message,
+        },
+    });
     const lower = input.message.toLowerCase();
     let botReply = 'Xin chào! Tôi là trợ lý ảo Natura Travel. Tôi có thể tư vấn tour, khách sạn, vé máy bay, combo ưu đãi hoặc giải đáp về thanh toán và bảo hiểm cho bạn.';
     let suggestedTours = [];
@@ -73,31 +70,50 @@ const sendMessage = (input) => __awaiter(void 0, void 0, void 0, function* () {
         botReply =
             'Natura Travel có hỗ trợ gói Vay đi du lịch / trả góp linh hoạt. Bạn có thể đăng ký hồ sơ ngay ở bước thanh toán hoặc mục Hỗ trợ tài chính.';
     }
-    const botMsg = {
-        role: 'bot',
-        message: botReply,
-        timestamp: new Date().toISOString(),
-    };
-    history.push(botMsg);
-    chatHistoryStore.set(input.session_id, history);
+    // Lưu phản hồi bot vào PostgreSQL
+    const botRecord = yield prisma_1.default.chat_history.create({
+        data: {
+            session_id: input.session_id,
+            user_id: input.user_id,
+            role: 'bot',
+            content: botReply,
+        },
+    });
     return {
         session_id: input.session_id,
         reply: botReply,
         suggested_tours: suggestedTours,
-        timestamp: botMsg.timestamp,
+        timestamp: botRecord.created_at ? botRecord.created_at.toISOString() : new Date().toISOString(),
     };
 });
 const getFaqs = () => __awaiter(void 0, void 0, void 0, function* () {
     return DEFAULT_FAQS;
 });
 const getChatHistory = (sessionId) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    return (_a = chatHistoryStore.get(sessionId)) !== null && _a !== void 0 ? _a : [];
+    if (!sessionId || sessionId === 'default_session')
+        return [];
+    const records = yield prisma_1.default.chat_history.findMany({
+        where: { session_id: sessionId },
+        orderBy: { created_at: 'asc' },
+    });
+    return records.map((r) => ({
+        role: r.role,
+        message: r.content,
+        timestamp: r.created_at ? r.created_at.toISOString() : new Date().toISOString(),
+    }));
 });
 const createSupportTicket = (input) => __awaiter(void 0, void 0, void 0, function* () {
-    const ticket = Object.assign(Object.assign({ id: `TKT_${Date.now()}` }, input), { status: 'open', created_at: new Date().toISOString() });
-    supportTicketStore.push(ticket);
-    return ticket;
+    return prisma_1.default.support_tickets.create({
+        data: {
+            user_id: input.user_id,
+            full_name: input.full_name,
+            email: input.email,
+            phone_number: input.phone_number,
+            subject: input.subject,
+            content: input.content,
+            status: 'open',
+        },
+    });
 });
 exports.default = {
     sendMessage,

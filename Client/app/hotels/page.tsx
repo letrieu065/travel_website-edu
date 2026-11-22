@@ -12,7 +12,8 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -90,7 +91,8 @@ const renderAmenityIcon = (amenity: string) => {
     return <Building className="w-3.5 h-3.5" />;
 };
 
-export default function HotelsPage() {
+function HotelsContent() {
+    const searchParams = useSearchParams();
     const [hotels, setHotels] = useState<HotelItem[]>([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
@@ -98,8 +100,18 @@ export default function HotelsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState('');
 
-    const [formFilters, setFormFilters] = useState<HotelFilterState>(initialHotelFilters);
-    const [appliedFilters, setAppliedFilters] = useState<HotelFilterState>(initialHotelFilters);
+    const initialFiltersFromUrl = useMemo((): HotelFilterState => ({
+        search: searchParams.get('search') || '',
+        city: searchParams.get('city') || '',
+        starRating: searchParams.get('star_rating') || searchParams.get('starRating') || '',
+        minPrice: searchParams.get('min_price') || searchParams.get('minPrice') || '',
+        maxPrice: searchParams.get('max_price') || searchParams.get('maxPrice') || '',
+        selectedAmenities: [],
+        sort: searchParams.get('sort') || 'newest',
+    }), [searchParams]);
+
+    const [formFilters, setFormFilters] = useState<HotelFilterState>(initialFiltersFromUrl);
+    const [appliedFilters, setAppliedFilters] = useState<HotelFilterState>(initialFiltersFromUrl);
 
     const popularAmenities = ['Wifi', 'Hồ bơi', 'Nhà hàng', 'Bãi đỗ xe', 'Bữa sáng', 'Spa'];
 
@@ -534,5 +546,18 @@ export default function HotelsPage() {
                 )}
             </main>
         </div>
+    );
+}
+
+function HotelsContentWrapper() {
+    const searchParams = useSearchParams();
+    return <HotelsContent key={searchParams.toString()} />;
+}
+
+export default function HotelsPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center text-xs font-black uppercase tracking-widest text-gray-500">Đang tải danh sách khách sạn...</div>}>
+            <HotelsContentWrapper />
+        </Suspense>
     );
 }

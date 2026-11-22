@@ -91,6 +91,91 @@ const getTours = (params) => __awaiter(void 0, void 0, void 0, function* () {
             some: Object.assign(Object.assign(Object.assign({}, (params.min_price !== undefined ? { price: { gte: params.min_price } } : {})), (params.max_price !== undefined ? { price: { lte: params.max_price } } : {})), (params.start_date ? { start_date: { gte: new Date(params.start_date) } } : {})),
         };
     }
+    // 1. Phân trang SQL trực tiếp khi không yêu cầu sắp xếp theo giá hay rating
+    if (params.sort !== 'price_asc' && params.sort !== 'price_desc' && params.sort !== 'rating_desc' && params.min_rating === undefined) {
+        const [total, toursRaw] = yield Promise.all([
+            prisma_1.default.tours.count({ where }),
+            prisma_1.default.tours.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { created_at: 'desc' },
+                include: {
+                    tour_images: { orderBy: { sort_order: 'asc' } },
+                    tour_departures: {
+                        where: { available_seats: { gt: 0 } },
+                        orderBy: { start_date: 'asc' },
+                    },
+                },
+            }),
+        ]);
+        const formatted = yield attachTourMetrics(toursRaw);
+        return {
+            tours: formatted,
+            total,
+            page,
+            limit,
+        };
+    }
+    // 2. Khi sắp xếp theo giá (price_asc / price_desc):
+    // Truy vấn chỉ lấy ID và giá lịch khởi hành gần nhất (nhẹ RAM, không load images/reviews toàn DB)
+    if (params.sort === 'price_asc' || params.sort === 'price_desc') {
+        const lightweightTours = yield prisma_1.default.tours.findMany({
+            where,
+            select: {
+                id: true,
+                created_at: true,
+                tour_departures: {
+                    where: { available_seats: { gt: 0 } },
+                    select: { price: true, discount_price: true },
+                    orderBy: { start_date: 'asc' },
+                    take: 1,
+                },
+            },
+        });
+        // Tính giá hiển thị hiệu dụng của từng tour
+        const mapped = lightweightTours.map((t) => {
+            var _a;
+            const dep = t.tour_departures[0];
+            const effectivePrice = dep
+                ? Number((_a = dep.discount_price) !== null && _a !== void 0 ? _a : dep.price)
+                : (params.sort === 'price_asc' ? Infinity : -Infinity);
+            return { id: t.id, price: effectivePrice };
+        });
+        if (params.sort === 'price_asc') {
+            mapped.sort((a, b) => a.price - b.price);
+        }
+        else {
+            mapped.sort((a, b) => b.price - a.price);
+        }
+        const total = mapped.length;
+        const pageItems = mapped.slice(skip, skip + limit);
+        const pageIds = pageItems.map((item) => item.id);
+        if (pageIds.length === 0) {
+            return { tours: [], total, page, limit };
+        }
+        // Chỉ fetch chi tiết đầy đủ và tính metrics cho duy nhất các tour trong trang hiện tại
+        const pageToursRaw = yield prisma_1.default.tours.findMany({
+            where: { id: { in: pageIds } },
+            include: {
+                tour_images: { orderBy: { sort_order: 'asc' } },
+                tour_departures: {
+                    where: { available_seats: { gt: 0 } },
+                    orderBy: { start_date: 'asc' },
+                },
+            },
+        });
+        const formatted = yield attachTourMetrics(pageToursRaw);
+        // Giữ nguyên thứ tự phân trang đã sắp xếp
+        const tourMap = new Map(formatted.map((t) => [t.id, t]));
+        const sortedPageTours = pageIds.map((id) => tourMap.get(id)).filter(Boolean);
+        return {
+            tours: sortedPageTours,
+            total,
+            page,
+            limit,
+        };
+    }
     const toursRaw = yield prisma_1.default.tours.findMany({
         where,
         orderBy: { created_at: 'desc' },
@@ -106,13 +191,7 @@ const getTours = (params) => __awaiter(void 0, void 0, void 0, function* () {
     if (params.min_rating !== undefined) {
         formatted = formatted.filter((t) => t.averageRating >= Number(params.min_rating));
     }
-    if (params.sort === 'price_asc') {
-        formatted.sort((a, b) => { var _a, _b; return ((_a = a.discountPrice) !== null && _a !== void 0 ? _a : a.price) - ((_b = b.discountPrice) !== null && _b !== void 0 ? _b : b.price); });
-    }
-    else if (params.sort === 'price_desc') {
-        formatted.sort((a, b) => { var _a, _b; return ((_a = b.discountPrice) !== null && _a !== void 0 ? _a : b.price) - ((_b = a.discountPrice) !== null && _b !== void 0 ? _b : a.price); });
-    }
-    else if (params.sort === 'rating_desc') {
+    if (params.sort === 'rating_desc') {
         formatted.sort((a, b) => b.averageRating - a.averageRating);
     }
     const total = formatted.length;

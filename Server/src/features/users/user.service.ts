@@ -129,7 +129,9 @@ const getMyItinerary = async (userId: string) => {
         }));
 
     return {
+        upcoming: upcomingTrips,
         upcomingTrips,
+        past: pastTrips,
         pastTrips,
         reminders,
         totalBookings: bookings.length,
@@ -147,28 +149,46 @@ const getItineraryDetail = async (userId: string, bookingId: string) => {
     return booking;
 };
 
-// Danh sách yêu thích (TODO: cần bảng favorites trong schema.prisma để lưu lâu dài)
-const favoriteStore = new Map<string, FavoriteItemData[]>();
-
+// Danh sách yêu thích lưu trữ trực tiếp trong PostgreSQL (model favorites)
 const getFavorites = async (userId: string) => {
-    return favoriteStore.get(userId) ?? [];
+    const list = await prisma.favorites.findMany({
+        where: { user_id: userId },
+        orderBy: { created_at: 'desc' },
+    });
+    return list.map((f) => ({
+        item_type: f.item_type as 'tour' | 'hotel' | 'flight',
+        item_id: f.item_id,
+    }));
 };
 
 const addFavorite = async (userId: string, item: FavoriteItemData) => {
-    const list = favoriteStore.get(userId) ?? [];
-    const exists = list.some((f) => f.item_id === item.item_id && f.item_type === item.item_type);
-    if (!exists) {
-        list.push(item);
-        favoriteStore.set(userId, list);
-    }
-    return list;
+    await prisma.favorites.upsert({
+        where: {
+            user_id_item_type_item_id: {
+                user_id: userId,
+                item_type: item.item_type,
+                item_id: item.item_id,
+            },
+        },
+        update: {},
+        create: {
+            user_id: userId,
+            item_type: item.item_type,
+            item_id: item.item_id,
+        },
+    });
+    return getFavorites(userId);
 };
 
 const removeFavorite = async (userId: string, itemType: string, itemId: string) => {
-    const list = favoriteStore.get(userId) ?? [];
-    const updated = list.filter((f) => !(f.item_id === itemId && f.item_type === itemType));
-    favoriteStore.set(userId, updated);
-    return updated;
+    await prisma.favorites.deleteMany({
+        where: {
+            user_id: userId,
+            item_type: itemType,
+            item_id: itemId,
+        },
+    });
+    return getFavorites(userId);
 };
 
 export default {

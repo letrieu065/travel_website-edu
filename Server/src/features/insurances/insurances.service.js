@@ -83,10 +83,12 @@ const calculateFee = (input) => __awaiter(void 0, void 0, void 0, function* () {
         total_fee: totalFee,
     };
 });
-const attachInsuranceToBooking = (bookingId_1, packageId_1, ...args_1) => __awaiter(void 0, [bookingId_1, packageId_1, ...args_1], void 0, function* (bookingId, packageId, guests = 1) {
-    const booking = yield prisma_1.default.bookings.findUnique({ where: { id: bookingId } });
+const attachInsuranceToBooking = (bookingId_1, packageId_1, ...args_1) => __awaiter(void 0, [bookingId_1, packageId_1, ...args_1], void 0, function* (bookingId, packageId, guests = 1, userId, role) {
+    const booking = yield prisma_1.default.bookings.findFirst({
+        where: Object.assign({ id: bookingId }, (role === 'admin' || !userId ? {} : { user_id: userId })),
+    });
     if (!booking) {
-        throw new Error('Không tìm thấy đơn đặt chỗ');
+        throw new Error('Không tìm thấy đơn đặt chỗ hoặc bạn không có quyền can thiệp');
     }
     const feeCalc = yield calculateFee({ package_id: packageId, guests });
     const updatedBooking = yield prisma_1.default.bookings.update({

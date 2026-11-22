@@ -12,13 +12,14 @@
 /**
  * Các phương thức thanh toán được hỗ trợ trong hệ thống Natura Travel
  */
-export type PaymentMethod = 'momo' | 'bank_transfer' | 'vnpay' | 'f88_loan';
+export type PaymentMethod = 'momo' | 'bank_transfer' | 'vnpay' | 'f88_loan' | 'vietqr';
 /**
  * Dữ liệu yêu cầu khởi tạo thanh toán
  */
 export interface CreatePaymentData {
     booking_id: string;
     payment_method: PaymentMethod;
+    user_id?: string;
 }
 /**
  * Khởi tạo giao dịch thanh toán trong cơ sở dữ liệu và sinh mã QR/URL thanh toán
@@ -82,10 +83,10 @@ declare const getMyPayments: (userId: string) => Promise<({
     payment_date: Date | null;
 })[]>;
 /**
- * Kiểm tra trạng thái giao dịch theo ID
+ * Kiểm tra trạng thái giao dịch theo ID (bảo vệ IDOR với userId & role)
  * // (Đã thêm)
  */
-declare const getPaymentStatus: (paymentId: string) => Promise<{
+declare const getPaymentStatus: (paymentId: string, userId?: string, role?: string) => Promise<{
     id: string;
     booking_id: string | null;
     amount: import("@prisma/client-runtime-utils").Decimal;

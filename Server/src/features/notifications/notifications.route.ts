@@ -1,6 +1,6 @@
 import express from 'express';
 import notificationsController from './notifications.controller';
-import { authenticate } from '../../middleware/auth.middleware';
+import { authenticate, requireAdmin } from '../../middleware/auth.middleware';
 
 const router = express.Router();
 
@@ -9,7 +9,7 @@ router.get('/contact-channels', notificationsController.getContactChannels);
 router.get('/', authenticate, notificationsController.getMyNotifications);
 router.patch('/read-all', authenticate, notificationsController.markAllAsRead);
 router.patch('/:id/read', authenticate, notificationsController.markAsRead);
-router.post('/send-email', authenticate, notificationsController.sendEmail);
+router.post('/send-email', authenticate, requireAdmin, notificationsController.sendEmail);
 
 export default router;
 

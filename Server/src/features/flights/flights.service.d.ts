@@ -20,6 +20,7 @@ declare const getFlights: (params: FlightFilterParams) => Promise<{
         departure_airport: string;
         arrival_airport: string;
         created_at: Date | null;
+        flight_number: string;
         ticket_price: number;
         planes: {
             id: string;
@@ -41,6 +42,7 @@ declare const getFlightById: (id: string) => Promise<{
     departure_airport: string;
     arrival_airport: string;
     created_at: Date | null;
+    flight_number: string;
     ticket_price: number;
     planes: {
         id: string;

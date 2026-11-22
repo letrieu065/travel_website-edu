@@ -89,27 +89,48 @@ const getHotels = async (params: HotelFilterParams) => {
         where.amenities = { hasEvery: params.amenities };
     }
 
-    const hotelsRaw = await prisma.hotels.findMany({
-        where,
-        orderBy: { created_at: 'desc' },
-        include: {
-            hotel_images: { orderBy: { sort_order: 'asc' } },
-        },
-    });
-
-    let formatted = await attachHotelMetrics(hotelsRaw);
-
+    // Sắp xếp trực tiếp ở database level
+    let orderBy: any = { created_at: 'desc' };
     if (params.sort === 'price_asc') {
-        formatted.sort((a, b) => (a.discount_price ?? a.price_per_night) - (b.discount_price ?? b.price_per_night));
+        orderBy = { price_per_night: 'asc' };
     } else if (params.sort === 'price_desc') {
-        formatted.sort((a, b) => (b.discount_price ?? b.price_per_night) - (a.discount_price ?? a.price_per_night));
+        orderBy = { price_per_night: 'desc' };
     } else if (params.sort === 'star_desc') {
-        formatted.sort((a, b) => (b.star_rating ?? 0) - (a.star_rating ?? 0));
-    } else if (params.sort === 'rating_desc') {
-        formatted.sort((a, b) => b.averageRating - a.averageRating);
+        orderBy = { star_rating: 'desc' };
     }
 
-    const total = formatted.length;
+    if (params.sort !== 'rating_desc') {
+        const [total, hotelsRaw] = await Promise.all([
+            prisma.hotels.count({ where }),
+            prisma.hotels.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy,
+                include: {
+                    hotel_images: { orderBy: { sort_order: 'asc' } },
+                },
+            }),
+        ]);
+
+        const formatted = await attachHotelMetrics(hotelsRaw);
+        return { hotels: formatted, total, page, limit };
+    }
+
+    const [total, hotelsRaw] = await Promise.all([
+        prisma.hotels.count({ where }),
+        prisma.hotels.findMany({
+            where,
+            orderBy: { star_rating: 'desc' },
+            include: {
+                hotel_images: { orderBy: { sort_order: 'asc' } },
+            },
+        }),
+    ]);
+
+    let formatted = await attachHotelMetrics(hotelsRaw);
+    formatted.sort((a, b) => b.averageRating - a.averageRating);
+
     const hotels = formatted.slice(skip, skip + limit);
 
     return { hotels, total, page, limit };
@@ -130,15 +151,14 @@ const getTrendingHotels = async (limit: number = 6) => {
 
 const getTopHotels = async (limit: number = 6) => {
     const hotelsRaw = await prisma.hotels.findMany({
+        take: limit,
         orderBy: { star_rating: 'desc' },
         include: {
             hotel_images: { orderBy: { sort_order: 'asc' } },
         },
     });
 
-    const formatted = await attachHotelMetrics(hotelsRaw);
-    formatted.sort((a, b) => b.averageRating - a.averageRating);
-    return formatted.slice(0, limit);
+    return attachHotelMetrics(hotelsRaw);
 };
 
 const getHotelById = async (id: string) => {

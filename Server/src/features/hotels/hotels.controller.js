@@ -27,9 +27,16 @@ const hotels_service_1 = __importDefault(require("./hotels.service"));
  * Xử lý lỗi chuẩn cho Hotels Controller
  * // (Đã thêm)
  */
+const isValidUUID = (id) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
 const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const msg = (error === null || error === void 0 ? void 0 : error.message) || defaultMessage;
+    if (msg.includes('Không tìm thấy') || (error === null || error === void 0 ? void 0 : error.code) === 'P2025' || (error === null || error === void 0 ? void 0 : error.code) === 'P2007') {
+        return res.status(404).json({ status: 'error', message: msg });
+    }
+    return res.status(500).json({ status: 'error', message: msg });
 };
 /**
  * Trích xuất an toàn giá trị string từ route params
@@ -50,6 +57,18 @@ const getParam = (param) => {
 const getHotels = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { page = 1, limit = 10, search, city, star_rating, min_price, max_price, amenities, sort } = req.query;
+        if (star_rating !== undefined) {
+            const parsedStar = Number(star_rating);
+            if (isNaN(parsedStar) || parsedStar < 1 || parsedStar > 5) {
+                return res.status(400).json({ status: 'error', message: 'star_rating phải là số từ 1 đến 5' });
+            }
+        }
+        if (min_price !== undefined && (isNaN(Number(min_price)) || Number(min_price) < 0)) {
+            return res.status(400).json({ status: 'error', message: 'min_price phải là số' });
+        }
+        if (max_price !== undefined && (isNaN(Number(max_price)) || Number(max_price) < 0)) {
+            return res.status(400).json({ status: 'error', message: 'max_price phải là số' });
+        }
         const amenitiesList = typeof amenities === 'string' && amenities.trim()
             ? amenities.split(',').map((a) => a.trim())
             : undefined;
@@ -108,6 +127,9 @@ const getTopHotels = (req, res) => __awaiter(void 0, void 0, void 0, function* (
 const getHotelById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const id = getParam(req.params.id);
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy khách sạn (ID không hợp lệ)' });
+        }
         const hotel = yield hotels_service_1.default.getHotelById(id);
         if (!hotel) {
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy khách sạn' });
@@ -126,6 +148,9 @@ const getHotelById = (req, res) => __awaiter(void 0, void 0, void 0, function* (
 const checkRoomAvailability = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const id = getParam(req.params.id);
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy khách sạn (ID không hợp lệ)' });
+        }
         const rooms = Number(req.query.rooms) || 1;
         const checkIn = req.query.check_in;
         const checkOut = req.query.check_out;

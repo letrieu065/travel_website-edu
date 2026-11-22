@@ -15,8 +15,8 @@ model booking_items {
   item_type  String    @db.VarChar
   quantity   Int
   unit_price Decimal   @db.Decimal
-  check_in   DateTime? @db.Date
-  check_out  DateTime? @db.Date
+  check_in   DateTime? @db.Timestamptz(6)
+  check_out  DateTime? @db.Timestamptz(6)
   item_id    String    @db.Uuid
   bookings   bookings  @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -34,6 +34,8 @@ model bookings {
   booking_items booking_items[]
   users         users?          @relation(fields: [user_id], references: [id], onDelete: Cascade)
   payments      payments[]
+
+  @@index([user_id], map: "idx_bookings_user_id")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -52,6 +54,7 @@ model flights {
 
   @@unique([plane_id, departure_time], map: "flight_schedules_flight_time_key")
   @@index([plane_id], map: "flight_schedules_flight_id_idx")
+  @@index([departure_airport, arrival_airport, departure_time], map: "idx_flights_search")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -97,6 +100,8 @@ model payments {
   payment_status String?   @default("pending") @db.VarChar(20)
   payment_date   DateTime? @db.Timestamptz(6)
   bookings       bookings? @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+
+  @@index([booking_id], map: "idx_payments_booking_id")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -167,6 +172,10 @@ model tours {
   vehicle            String?
   tour_departures    tour_departures[]
   tour_images        tour_images[]
+
+  @@index([is_trending])
+  @@index([destination])
+  @@index([tour_type])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -184,4 +193,77 @@ model users {
   facebook_id   String?    @unique(map: "users_facebookId_key")
   bookings      bookings[]
   reviews       reviews[]
+  favorites     favorites[]
+  travel_loans  travel_loans[]
+}
+
+model favorites {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  item_type  String    @db.VarChar(50)
+  item_id    String    @db.VarChar(100)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, item_type, item_id], map: "idx_favorites_unique")
+  @@index([user_id])
+}
+
+model notifications {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.VarChar(50)
+  type       String    @db.VarChar(50)
+  title      String    @db.VarChar(255)
+  message    String
+  is_read    Boolean   @default(false)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id])
+}
+
+model travel_loans {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String    @db.Uuid
+  booking_id      String    @db.Uuid
+  full_name       String    @db.VarChar(100)
+  phone_number    String    @db.VarChar(20)
+  identity_number String    @db.VarChar(50)
+  monthly_income  Decimal   @db.Decimal(12, 2)
+  loan_amount     Decimal   @db.Decimal(12, 2)
+  term_months     Int
+  total_interest  Decimal   @db.Decimal(12, 2)
+  total_payable   Decimal   @db.Decimal(12, 2)
+  monthly_payment Decimal   @db.Decimal(12, 2)
+  status          String    @default("pending_review") @db.VarChar(50)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  users           users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([booking_id])
+}
+
+model chat_history {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id String    @db.VarChar(100)
+  user_id    String?   @db.Uuid
+  role       String    @db.VarChar(20)
+  content    String
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([session_id])
+  @@index([user_id])
+}
+
+model support_tickets {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String?   @db.Uuid
+  full_name    String    @db.VarChar(100)
+  email        String    @db.VarChar(255)
+  phone_number String?   @db.VarChar(20)
+  subject      String    @db.VarChar(255)
+  content      String
+  status       String    @default("open") @db.VarChar(50)
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id])
 }

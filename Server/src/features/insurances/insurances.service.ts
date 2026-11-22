@@ -97,10 +97,21 @@ const calculateFee = async (input: CalculateInsuranceInput) => {
     };
 };
 
-const attachInsuranceToBooking = async (bookingId: string, packageId: string, guests: number = 1) => {
-    const booking = await prisma.bookings.findUnique({ where: { id: bookingId } });
+const attachInsuranceToBooking = async (
+    bookingId: string,
+    packageId: string,
+    guests: number = 1,
+    userId?: string,
+    role?: string
+) => {
+    const booking = await prisma.bookings.findFirst({
+        where: {
+            id: bookingId,
+            ...(role === 'admin' || !userId ? {} : { user_id: userId }),
+        },
+    });
     if (!booking) {
-        throw new Error('Không tìm thấy đơn đặt chỗ');
+        throw new Error('Không tìm thấy đơn đặt chỗ hoặc bạn không có quyền can thiệp');
     }
 
     const feeCalc = await calculateFee({ package_id: packageId, guests });

@@ -4,9 +4,10 @@ import adminService, { ItemType, PaymentStatus } from './admin.service';
 // (Đã thêm)
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
+    const isProd = process.env.NODE_ENV === 'production';
     return res.status(500).json({
         status: 'error',
-        message: error.message || defaultMessage,
+        message: isProd ? 'Đã có sự cố xảy ra trên hệ thống, vui lòng thử lại sau' : (error.message || defaultMessage),
     });
 };
 
@@ -66,6 +67,9 @@ const createUser = async (req: Request, res: Response) => {
         });
         return res.status(201).json({ status: 'success', message: 'Tạo người dùng thành công', data: newUser });
     } catch (error: any) {
+        if (error.message?.includes('Mật khẩu') || error.message?.includes('Email đã được sử dụng')) {
+            return res.status(400).json({ status: 'error', message: error.message });
+        }
         return handleControllerError(res, error, 'Lỗi khi tạo người dùng');
     }
 };

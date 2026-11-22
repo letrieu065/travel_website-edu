@@ -12,7 +12,8 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Search, MapPin, Filter, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import TourCard, { type Tour } from '@/components/common/TourCard';
 
@@ -40,7 +41,8 @@ const initialFilters: TourFilterState = {
     sort: 'newest',
 };
 
-export default function ToursPage() {
+function ToursContent() {
+    const searchParams = useSearchParams();
     const [tours, setTours] = useState<Tour[]>([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
@@ -48,10 +50,22 @@ export default function ToursPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState('');
 
+    // Đọc tham số tìm kiếm ban đầu từ URL query parameters
+    const initialFiltersFromUrl = useMemo((): TourFilterState => ({
+        search: searchParams.get('search') || '',
+        destination: searchParams.get('destination') || '',
+        departureLocation: searchParams.get('departure_location') || searchParams.get('departureLocation') || '',
+        tourType: searchParams.get('tour_type') || searchParams.get('tourType') || '',
+        minPrice: searchParams.get('min_price') || searchParams.get('minPrice') || '',
+        maxPrice: searchParams.get('max_price') || searchParams.get('maxPrice') || '',
+        minRating: searchParams.get('min_rating') || searchParams.get('minRating') || '',
+        sort: searchParams.get('sort') || 'newest',
+    }), [searchParams]);
+
     // Form inputs state
-    const [formFilters, setFormFilters] = useState<TourFilterState>(initialFilters);
+    const [formFilters, setFormFilters] = useState<TourFilterState>(initialFiltersFromUrl);
     // Applied filters state (triggers API call)
-    const [appliedFilters, setAppliedFilters] = useState<TourFilterState>(initialFilters);
+    const [appliedFilters, setAppliedFilters] = useState<TourFilterState>(initialFiltersFromUrl);
 
     useEffect(() => {
         let isCancelled = false;
@@ -388,5 +402,18 @@ export default function ToursPage() {
                 )}
             </main>
         </div>
+    );
+}
+
+function ToursContentWrapper() {
+    const searchParams = useSearchParams();
+    return <ToursContent key={searchParams.toString()} />;
+}
+
+export default function ToursPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center text-xs font-black uppercase tracking-widest text-gray-500">Đang tải danh sách tours...</div>}>
+            <ToursContentWrapper />
+        </Suspense>
     );
 }

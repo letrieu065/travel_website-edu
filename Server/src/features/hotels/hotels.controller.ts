@@ -16,9 +16,17 @@ import hotelsService from './hotels.service';
  * Xử lý lỗi chuẩn cho Hotels Controller
  * // (Đã thêm)
  */
+const isValidUUID = (id: string): boolean => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
+
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const msg = error?.message || defaultMessage;
+    if (msg.includes('Không tìm thấy') || error?.code === 'P2025' || error?.code === 'P2007') {
+        return res.status(404).json({ status: 'error', message: msg });
+    }
+    return res.status(500).json({ status: 'error', message: msg });
 };
 
 /**
@@ -41,6 +49,20 @@ const getParam = (param: string | string[] | undefined): string => {
 const getHotels = async (req: Request, res: Response) => {
     try {
         const { page = 1, limit = 10, search, city, star_rating, min_price, max_price, amenities, sort } = req.query;
+
+        if (star_rating !== undefined) {
+            const parsedStar = Number(star_rating);
+            if (isNaN(parsedStar) || parsedStar < 1 || parsedStar > 5) {
+                return res.status(400).json({ status: 'error', message: 'star_rating phải là số từ 1 đến 5' });
+            }
+        }
+        if (min_price !== undefined && (isNaN(Number(min_price)) || Number(min_price) < 0)) {
+            return res.status(400).json({ status: 'error', message: 'min_price phải là số' });
+        }
+        if (max_price !== undefined && (isNaN(Number(max_price)) || Number(max_price) < 0)) {
+            return res.status(400).json({ status: 'error', message: 'max_price phải là số' });
+        }
+
         const amenitiesList = typeof amenities === 'string' && amenities.trim()
             ? amenities.split(',').map((a) => a.trim())
             : undefined;
@@ -101,6 +123,9 @@ const getTopHotels = async (req: Request, res: Response) => {
 const getHotelById = async (req: Request, res: Response) => {
     try {
         const id = getParam(req.params.id);
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy khách sạn (ID không hợp lệ)' });
+        }
         const hotel = await hotelsService.getHotelById(id);
         if (!hotel) {
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy khách sạn' });
@@ -119,6 +144,9 @@ const getHotelById = async (req: Request, res: Response) => {
 const checkRoomAvailability = async (req: Request, res: Response) => {
     try {
         const id = getParam(req.params.id);
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy khách sạn (ID không hợp lệ)' });
+        }
         const rooms = Number(req.query.rooms) || 1;
         const checkIn = req.query.check_in as string;
         const checkOut = req.query.check_out as string;

@@ -120,6 +120,7 @@ function HotelDetailContent({
     const [availability, setAvailability] = useState<AvailabilityResult | null>(null);
     const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
     const [bookingSuccess, setBookingSuccess] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         let isCancelled = false;
@@ -200,29 +201,35 @@ function HotelDetailContent({
     }, [hotelId, checkIn, checkOut, rooms]);
 
     // (Đã thêm)
-    const handleBookingSubmit = (e: React.FormEvent) => {
+    const handleBookingSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (availability && !availability.is_available) {
-            alert('Khách sạn không đủ phòng trống theo yêu cầu của bạn.');
-            return;
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            if (availability && !availability.is_available) {
+                alert('Khách sạn không đủ phòng trống theo yêu cầu của bạn.');
+                return;
+            }
+
+            const pricePerNight = Number(hotel?.discount_price ?? hotel?.price_per_night ?? 0);
+            const nights = availability?.nights || 1;
+            const totalPrice = pricePerNight * nights * rooms;
+
+            const checkoutParams = new URLSearchParams({
+                type: 'hotel',
+                hotel_id: hotel?.id || hotelId,
+                guests: String(rooms),
+                nights: String(nights),
+                check_in: checkIn,
+                check_out: checkOut,
+                price: String(totalPrice),
+                title: hotel?.name || 'Khách sạn Natura Travel',
+            });
+
+            router.push(`/checkout?${checkoutParams.toString()}`);
+        } finally {
+            setIsSubmitting(false);
         }
-
-        const pricePerNight = Number(hotel?.discount_price ?? hotel?.price_per_night ?? 0);
-        const nights = availability?.nights || 1;
-        const totalPrice = pricePerNight * nights * rooms;
-
-        const checkoutParams = new URLSearchParams({
-            type: 'hotel',
-            hotel_id: hotel?.id || hotelId,
-            guests: String(rooms),
-            nights: String(nights),
-            check_in: checkIn,
-            check_out: checkOut,
-            price: String(totalPrice),
-            title: hotel?.name || 'Khách sạn Natura Travel',
-        });
-
-        router.push(`/checkout?${checkoutParams.toString()}`);
     };
 
     if (isLoading) {
@@ -569,10 +576,17 @@ function HotelDetailContent({
                                 ) : (
                                     <button
                                         type="submit"
-                                        disabled={isCheckingAvailability || (availability ? !availability.is_available : false)}
-                                        className="w-full bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed py-3 px-4 text-xs font-black uppercase tracking-widest transition-colors shadow-md"
+                                        disabled={isSubmitting || isCheckingAvailability || (availability ? !availability.is_available : false)}
+                                        className="w-full bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed py-3 px-4 text-xs font-black uppercase tracking-widest transition-colors shadow-md flex items-center justify-center gap-2"
                                     >
-                                        Đặt Phòng Ngay
+                                        {isSubmitting ? (
+                                            <>
+                                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                Đang xử lý...
+                                            </>
+                                        ) : (
+                                            'Đặt Phòng Ngay'
+                                        )}
                                     </button>
                                 )}
                             </form>

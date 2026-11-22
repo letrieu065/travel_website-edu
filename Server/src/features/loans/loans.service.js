@@ -13,13 +13,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const prisma_1 = __importDefault(require("../../config/prisma"));
-// TODO: Tạo bảng travel_loans trong schema.prisma để lưu chi tiết hồ sơ vay (CCCD, thu nhập, trạng thái duyệt)
-const loanApplicationsStore = [];
-/* ============================== SERVICE METHODS ============================== */
 const calculateInstallment = (input) => __awaiter(void 0, void 0, void 0, function* () {
     const amount = Math.max(0, Number(input.loan_amount));
     const months = [3, 6, 9, 12].includes(Number(input.term_months)) ? Number(input.term_months) : 6;
-    const monthlyInterestRate = 0.015; // 1.5% / tháng (demo)
+    const monthlyInterestRate = 0.015; // 1.5% / tháng
     const totalInterest = Math.round(amount * monthlyInterestRate * months);
     const totalPayable = amount + totalInterest;
     const monthlyPayment = Math.round(totalPayable / months);
@@ -54,14 +51,34 @@ const applyTravelLoan = (input) => __awaiter(void 0, void 0, void 0, function* (
             payment_status: 'pending',
         },
     });
-    const application = Object.assign(Object.assign({ id: paymentRecord.id, user_id: input.user_id, booking_id: input.booking_id, full_name: input.full_name, phone_number: input.phone_number, identity_number: input.identity_number, monthly_income: input.monthly_income }, calculation), { status: 'pending_review', created_at: new Date().toISOString() });
-    loanApplicationsStore.push(application);
-    return application;
+    // Lưu chi tiết hồ sơ vay lâu dài vào PostgreSQL (model travel_loans)
+    const application = yield prisma_1.default.travel_loans.create({
+        data: {
+            id: paymentRecord.id,
+            user_id: input.user_id,
+            booking_id: input.booking_id,
+            full_name: input.full_name,
+            phone_number: input.phone_number,
+            identity_number: input.identity_number,
+            monthly_income: input.monthly_income,
+            loan_amount: calculation.loan_amount,
+            term_months: calculation.term_months,
+            total_interest: calculation.total_interest,
+            total_payable: calculation.total_payable,
+            monthly_payment: calculation.monthly_payment,
+            status: 'pending_review',
+        },
+    });
+    return Object.assign(Object.assign({}, application), { loan_amount: Number(application.loan_amount), total_interest: Number(application.total_interest), total_payable: Number(application.total_payable), monthly_payment: Number(application.monthly_payment), monthly_income: Number(application.monthly_income) });
 });
 const getMyLoans = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const storeItems = loanApplicationsStore.filter((l) => l.user_id === userId);
-    if (storeItems.length > 0)
-        return storeItems;
+    const loans = yield prisma_1.default.travel_loans.findMany({
+        where: { user_id: userId },
+        orderBy: { created_at: 'desc' },
+    });
+    if (loans.length > 0) {
+        return loans.map((l) => (Object.assign(Object.assign({}, l), { loan_amount: Number(l.loan_amount), total_interest: Number(l.total_interest), total_payable: Number(l.total_payable), monthly_payment: Number(l.monthly_payment), monthly_income: Number(l.monthly_income) })));
+    }
     return prisma_1.default.payments.findMany({
         where: {
             payment_method: 'f88_loan',
@@ -71,9 +88,12 @@ const getMyLoans = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     });
 });
 const getLoanById = (userId, id) => __awaiter(void 0, void 0, void 0, function* () {
-    const found = loanApplicationsStore.find((l) => l.id === id && l.user_id === userId);
-    if (found)
-        return found;
+    const loan = yield prisma_1.default.travel_loans.findFirst({
+        where: { id, user_id: userId },
+    });
+    if (loan) {
+        return Object.assign(Object.assign({}, loan), { loan_amount: Number(loan.loan_amount), total_interest: Number(loan.total_interest), total_payable: Number(loan.total_payable), monthly_payment: Number(loan.monthly_payment), monthly_income: Number(loan.monthly_income) });
+    }
     return prisma_1.default.payments.findFirst({
         where: {
             id,

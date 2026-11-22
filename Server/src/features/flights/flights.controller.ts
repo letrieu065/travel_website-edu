@@ -13,12 +13,24 @@ import { Request, Response } from 'express';
 import flightsService from './flights.service';
 
 /**
+ * Kiểm tra định dạng UUID v4 hợp lệ
+ * // (Đã thêm)
+ */
+const isValidUUID = (id: string): boolean => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
+
+/**
  * Xử lý lỗi chuẩn cho Flights Controller
  * // (Đã thêm)
  */
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const msg = error?.message || defaultMessage;
+    if (msg.includes('Không tìm thấy') || error?.code === 'P2025' || error?.code === 'P2007') {
+        return res.status(404).json({ status: 'error', message: msg });
+    }
+    return res.status(500).json({ status: 'error', message: msg });
 };
 
 /**
@@ -80,6 +92,9 @@ const getFlights = async (req: Request, res: Response) => {
 const getFlightById = async (req: Request, res: Response) => {
     try {
         const id = getParam(req.params.id);
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy chuyến bay (ID không hợp lệ)' });
+        }
         const flight = await flightsService.getFlightById(id);
         if (!flight) {
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy chuyến bay' });

@@ -13,8 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const nodemailer_1 = __importDefault(require("nodemailer"));
-// TODO: Thêm bảng notifications vào schema.prisma để lưu vào PostgreSQL
-const notificationStore = [];
+const prisma_1 = __importDefault(require("../../config/prisma"));
 const CONTACT_CHANNELS = {
     company_name: 'Natura Travel Vietnam',
     zalo_url: 'https://zalo.me/0900000000',
@@ -31,39 +30,47 @@ const CONTACT_CHANNELS = {
 };
 /* ============================== SERVICE METHODS ============================== */
 const getMyNotifications = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    return notificationStore
-        .filter((n) => n.user_id === userId || n.user_id === 'all')
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return prisma_1.default.notifications.findMany({
+        where: {
+            OR: [{ user_id: userId }, { user_id: 'all' }],
+        },
+        orderBy: { created_at: 'desc' },
+    });
 });
 const createNotification = (userId, type, title, message) => __awaiter(void 0, void 0, void 0, function* () {
-    const item = {
-        id: `notif_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        user_id: userId,
-        type,
-        title,
-        message,
-        is_read: false,
-        created_at: new Date().toISOString(),
-    };
-    notificationStore.push(item);
-    return item;
+    return prisma_1.default.notifications.create({
+        data: {
+            user_id: userId,
+            type,
+            title,
+            message,
+            is_read: false,
+        },
+    });
 });
 const markAsRead = (userId, notificationId) => __awaiter(void 0, void 0, void 0, function* () {
-    const item = notificationStore.find((n) => n.id === notificationId && (n.user_id === userId || n.user_id === 'all'));
+    const item = yield prisma_1.default.notifications.findFirst({
+        where: {
+            id: notificationId,
+            OR: [{ user_id: userId }, { user_id: 'all' }],
+        },
+    });
     if (!item)
         return null;
-    item.is_read = true;
-    return item;
+    return prisma_1.default.notifications.update({
+        where: { id: notificationId },
+        data: { is_read: true },
+    });
 });
 const markAllAsRead = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    let count = 0;
-    notificationStore.forEach((n) => {
-        if ((n.user_id === userId || n.user_id === 'all') && !n.is_read) {
-            n.is_read = true;
-            count += 1;
-        }
+    const res = yield prisma_1.default.notifications.updateMany({
+        where: {
+            OR: [{ user_id: userId }, { user_id: 'all' }],
+            is_read: false,
+        },
+        data: { is_read: true },
     });
-    return { updated_count: count };
+    return { updated_count: res.count };
 });
 const sendEmailNotification = (input) => __awaiter(void 0, void 0, void 0, function* () {
     if (!process.env.MY_GMAIL || !process.env.GMAIL_APP_PASSWORD) {

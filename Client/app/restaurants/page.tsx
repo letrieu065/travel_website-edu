@@ -12,7 +12,7 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import {
     Utensils,
@@ -76,6 +76,30 @@ export default function RestaurantsPage() {
     // Selected restaurant for table booking modal
     const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantItem | null>(null);
     const [bookingSuccess, setBookingSuccess] = useState(false);
+
+    // Controlled Table Reservation Form State
+    const [reserveName, setReserveName] = useState('');
+    const [reservePhone, setReservePhone] = useState('');
+    const [reserveDateTime, setReserveDateTime] = useState('');
+    const [reserveGuests, setReserveGuests] = useState('2');
+    const [reserveError, setReserveError] = useState('');
+    const [confirmedReservation, setConfirmedReservation] = useState<{
+        restaurantName: string;
+        customerName: string;
+        phone: string;
+        dateTime: string;
+        guests: string;
+    } | null>(null);
+
+    const modalTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (modalTimerRef.current) {
+                clearTimeout(modalTimerRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         let isCancelled = false;
@@ -142,14 +166,82 @@ export default function RestaurantsPage() {
         setAppliedFilters(initialFilters);
     };
 
+    const handleOpenBooking = (rest: RestaurantItem) => {
+        if (modalTimerRef.current) {
+            clearTimeout(modalTimerRef.current);
+            modalTimerRef.current = null;
+        }
+        setSelectedRestaurant(rest);
+        setBookingSuccess(false);
+        setConfirmedReservation(null);
+        setReserveError('');
+        setReserveName('');
+        setReservePhone('');
+        setReserveDateTime('');
+        setReserveGuests('2');
+    };
+
+    const handleCloseBooking = () => {
+        if (modalTimerRef.current) {
+            clearTimeout(modalTimerRef.current);
+            modalTimerRef.current = null;
+        }
+        setSelectedRestaurant(null);
+        setBookingSuccess(false);
+    };
+
     // (Đã thêm)
     const handleReserveTable = (e: React.FormEvent) => {
         e.preventDefault();
+        setReserveError('');
+
+        if (!reserveName.trim()) {
+            setReserveError('Vui lòng nhập họ và tên của bạn.');
+            return;
+        }
+
+        // Validate phone: VN phone format (10 chữ số bắt đầu bằng 0 hoặc +84)
+        const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+        const cleanPhone = reservePhone.replace(/[\s.-]/g, '');
+        if (!phoneRegex.test(cleanPhone)) {
+            setReserveError('Số điện thoại không hợp lệ (Ví dụ: 0912345678).');
+            return;
+        }
+
+        if (!reserveDateTime) {
+            setReserveError('Vui lòng chọn ngày và giờ dùng bữa.');
+            return;
+        }
+
+        const selectedTime = new Date(reserveDateTime).getTime();
+        if (isNaN(selectedTime) || selectedTime <= Date.now()) {
+            setReserveError('Thời gian đặt bàn phải sau thời điểm hiện tại.');
+            return;
+        }
+
+        const guestsNum = Number(reserveGuests);
+        if (isNaN(guestsNum) || guestsNum <= 0) {
+            setReserveError('Số lượng khách không hợp lệ.');
+            return;
+        }
+
+        setConfirmedReservation({
+            restaurantName: selectedRestaurant?.name || 'Nhà hàng',
+            customerName: reserveName.trim(),
+            phone: cleanPhone,
+            dateTime: new Date(reserveDateTime).toLocaleString('vi-VN', {
+                dateStyle: 'full',
+                timeStyle: 'short',
+            }),
+            guests: reserveGuests,
+        });
         setBookingSuccess(true);
-        setTimeout(() => {
+
+        if (modalTimerRef.current) clearTimeout(modalTimerRef.current);
+        modalTimerRef.current = setTimeout(() => {
             setBookingSuccess(false);
             setSelectedRestaurant(null);
-        }, 2500);
+        }, 5000);
     };
 
     return (
@@ -349,7 +441,7 @@ export default function RestaurantsPage() {
                                     <div className="p-4 bg-gray-50 border-t border-gray-100">
                                         <button
                                             type="button"
-                                            onClick={() => setSelectedRestaurant(rest)}
+                                            onClick={() => handleOpenBooking(rest)}
                                             className="w-full bg-black text-[#FACC15] hover:bg-gray-800 py-2.5 text-xs font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
                                         >
                                             <Utensils className="w-3.5 h-3.5" /> Đặt Bàn Ngay
@@ -376,33 +468,74 @@ export default function RestaurantsPage() {
                             {selectedRestaurant.address}
                         </p>
 
-                        {bookingSuccess ? (
-                            <div className="bg-emerald-50 border-2 border-emerald-500 p-6 text-center text-emerald-800 my-4">
-                                <Sparkles className="w-10 h-10 text-emerald-600 mx-auto mb-2" />
-                                <h4 className="font-black text-sm uppercase">Yêu Cầu Đã Được Ghi Nhận!</h4>
-                                <p className="text-xs mt-1">Nhà hàng sẽ gọi điện xác nhận trong vòng 15 phút.</p>
+                        {bookingSuccess && confirmedReservation ? (
+                            <div className="bg-emerald-50 border-2 border-emerald-500 p-6 text-center text-emerald-800 my-4 space-y-3">
+                                <Sparkles className="w-10 h-10 text-emerald-600 mx-auto" />
+                                <h4 className="font-black text-sm uppercase">Yêu Cầu Đặt Bàn Đã Được Xác Nhận!</h4>
+                                <div className="text-xs text-left bg-white p-3 border border-emerald-200 space-y-1.5 rounded">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Nhà hàng:</span>
+                                        <span className="font-bold text-gray-900">{confirmedReservation.restaurantName}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Khách hàng:</span>
+                                        <span className="font-bold text-gray-900">{confirmedReservation.customerName}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Số điện thoại:</span>
+                                        <span className="font-mono font-bold text-gray-900">{confirmedReservation.phone}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Thời gian:</span>
+                                        <span className="font-bold text-gray-900">{confirmedReservation.dateTime}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Số lượng khách:</span>
+                                        <span className="font-bold text-emerald-700">{confirmedReservation.guests} người</span>
+                                    </div>
+                                </div>
+                                <p className="text-[11px] text-emerald-700 mt-2">
+                                    Nhà hàng sẽ liên hệ xác nhận bàn qua số điện thoại trên trong vòng 15 phút.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={handleCloseBooking}
+                                    className="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-2.5 text-xs font-black uppercase tracking-widest mt-2 transition-colors"
+                                >
+                                    Hoàn Tất & Đóng
+                                </button>
                             </div>
                         ) : (
                             <form onSubmit={handleReserveTable} className="space-y-4">
+                                {reserveError && (
+                                    <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs font-semibold text-left">
+                                        {reserveError}
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-[11px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                                            Họ và Tên
+                                            Họ và Tên *
                                         </label>
                                         <input
                                             type="text"
                                             required
+                                            value={reserveName}
+                                            onChange={(e) => setReserveName(e.target.value)}
                                             placeholder="Nguyễn Văn A"
                                             className="w-full px-3 py-2 text-xs font-semibold border border-gray-200 focus:outline-none focus:border-black"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-[11px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                                            Số Điện Thoại
+                                            Số Điện Thoại *
                                         </label>
                                         <input
                                             type="tel"
                                             required
+                                            value={reservePhone}
+                                            onChange={(e) => setReservePhone(e.target.value)}
                                             placeholder="0912 345 678"
                                             className="w-full px-3 py-2 text-xs font-semibold border border-gray-200 focus:outline-none focus:border-black"
                                         />
@@ -412,20 +545,26 @@ export default function RestaurantsPage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-[11px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                                            Ngày & Giờ Dùng Bữa
+                                            Ngày & Giờ Dùng Bữa *
                                         </label>
                                         <input
                                             type="datetime-local"
                                             required
+                                            value={reserveDateTime}
+                                            onChange={(e) => setReserveDateTime(e.target.value)}
                                             className="w-full px-3 py-2 text-xs font-semibold border border-gray-200 focus:outline-none focus:border-black"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-[11px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                                            Số Lượng Khách
+                                            Số Lượng Khách *
                                         </label>
-                                        <select className="w-full px-3 py-2 text-xs font-semibold border border-gray-200 focus:outline-none focus:border-black bg-white">
-                                            {[2, 4, 6, 8, 10, 15].map((num) => (
+                                        <select
+                                            value={reserveGuests}
+                                            onChange={(e) => setReserveGuests(e.target.value)}
+                                            className="w-full px-3 py-2 text-xs font-semibold border border-gray-200 focus:outline-none focus:border-black bg-white"
+                                        >
+                                            {[1, 2, 4, 6, 8, 10, 15, 20].map((num) => (
                                                 <option key={num} value={num}>
                                                     {num} người
                                                 </option>
@@ -443,7 +582,7 @@ export default function RestaurantsPage() {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setSelectedRestaurant(null)}
+                                        onClick={handleCloseBooking}
                                         className="border border-gray-200 px-6 py-3 text-xs font-bold text-gray-600 hover:text-black"
                                     >
                                         Hủy

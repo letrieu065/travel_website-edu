@@ -7,6 +7,7 @@ const router = express.Router();
 router.get('/featured', toursController.getFeaturedTours);
 router.get('/trending', toursController.getTrendingTours);
 router.get('/promotions', toursController.getPromotionTours);
+router.get('/promotion', toursController.getPromotionTours);
 router.get('/top-reviews', toursController.getTopTourReviews);
 
 // Tìm kiếm, lọc, chi tiết tour

@@ -22,15 +22,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const crypto_1 = __importDefault(require("crypto"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const payments_service_1 = __importDefault(require("./payments.service"));
+const env_1 = __importDefault(require("../../config/env"));
 /**
  * Xử lý lỗi chuẩn cho Payments Controller
  * // (Đã thêm)
  */
 const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const msg = (error === null || error === void 0 ? void 0 : error.message) || defaultMessage;
+    if (msg.includes('Không tìm thấy') || (error === null || error === void 0 ? void 0 : error.code) === 'P2025' || (error === null || error === void 0 ? void 0 : error.code) === 'P2007') {
+        return res.status(404).json({ status: 'error', message: msg });
+    }
+    if (msg.includes('không có quyền')) {
+        return res.status(403).json({ status: 'error', message: msg });
+    }
+    const isProd = process.env.NODE_ENV === 'production';
+    return res.status(500).json({
+        status: 'error',
+        message: isProd ? 'Đã có sự cố xảy ra trên hệ thống, vui lòng thử lại sau' : msg,
+    });
 };
 /**
  * Trích xuất an toàn giá trị string từ route params
@@ -46,48 +59,61 @@ const getParam = (param) => {
  * // (Đã thêm)
  */
 const extractUserId = (req) => {
-    var _a;
     const reqUser = req.user;
-    if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.userId)
-        return reqUser.userId;
     if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.id)
         return reqUser.id;
+    if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.userId)
+        return reqUser.userId;
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
             const token = authHeader.split(' ')[1];
-            const secret = process.env.JWT_SECRET || 'default_secret_key';
+            const secret = env_1.default.JWT_SECRET;
             const decoded = jsonwebtoken_1.default.verify(token, secret);
-            return decoded.userId || decoded.id || '';
+            return decoded.id || decoded.userId || '';
         }
-        catch (_b) {
+        catch (_a) {
             return '';
         }
     }
-    return req.query.user_id || ((_a = req.body) === null || _a === void 0 ? void 0 : _a.user_id) || '';
+    return '';
 };
 /* ============================== CONTROLLERS ============================== */
 /**
  * Khởi tạo giao dịch thanh toán mới cho đơn đặt chỗ
  * - Endpoint: POST /api/v1/payments/create
  * - Body: { booking_id: string, payment_method: PaymentMethod }
- * - Hỗ trợ: 'momo', 'bank_transfer', 'vnpay', 'f88_loan'
+ * - Hỗ trợ: 'vietqr', 'momo', 'bank_transfer', 'vnpay', 'f88_loan'
  * // (Đã thêm)
  */
 const createPayment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
+        const userId = extractUserId(req);
         const { booking_id, payment_method } = req.body;
-        const validMethods = ['momo', 'bank_transfer', 'vnpay', 'f88_loan'];
-        if (!booking_id || !validMethods.includes(payment_method)) {
+        const validMethods = ['vietqr', 'momo', 'bank_transfer', 'vnpay', 'f88_loan'];
+        if (!booking_id || !payment_method) {
             return res.status(400).json({
                 status: 'error',
-                message: 'Thiếu booking_id hoặc payment_method không hợp lệ',
+                message: 'Thiếu thông tin: booking_id hoặc payment_method không được để trống',
             });
         }
-        const result = yield payments_service_1.default.createPayment({ booking_id, payment_method });
+        if (!validMethods.includes(payment_method)) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Phương thức thanh toán payment_method không hợp lệ',
+            });
+        }
+        const result = yield payments_service_1.default.createPayment({ booking_id, payment_method, user_id: userId });
         return res.status(201).json(Object.assign({ status: 'success' }, result));
     }
     catch (error) {
+        if ((_a = error.message) === null || _a === void 0 ? void 0 : _a.includes('Không tìm thấy')) {
+            return res.status(404).json({ status: 'error', message: error.message });
+        }
+        if ((_b = error.message) === null || _b === void 0 ? void 0 : _b.includes('không có quyền')) {
+            return res.status(403).json({ status: 'error', message: error.message });
+        }
         return handleControllerError(res, error, 'Lỗi khi khởi tạo giao dịch thanh toán');
     }
 });
@@ -98,7 +124,24 @@ const createPayment = (req, res) => __awaiter(void 0, void 0, void 0, function* 
  * // (Đã thêm)
  */
 const handlePaymentWebhook = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
+        const webhookSecret = process.env.PAYMENT_WEBHOOK_SECRET || 'natura_payment_webhook_secret_2026';
+        const signatureHeader = (req.headers['x-webhook-secret'] || req.headers['x-signature']);
+        if (!signatureHeader || typeof signatureHeader !== 'string') {
+            return res.status(401).json({
+                status: 'error',
+                message: 'Chữ ký webhook không hợp lệ hoặc thiếu mã bí mật xác thực',
+            });
+        }
+        const signatureBuffer = Buffer.from(signatureHeader);
+        const secretBuffer = Buffer.from(webhookSecret);
+        if (signatureBuffer.length !== secretBuffer.length || !crypto_1.default.timingSafeEqual(signatureBuffer, secretBuffer)) {
+            return res.status(401).json({
+                status: 'error',
+                message: 'Chữ ký webhook không hợp lệ hoặc thiếu mã bí mật xác thực',
+            });
+        }
         const { transaction_id, status } = req.body;
         if (!transaction_id || !['paid', 'failed'].includes(status)) {
             return res.status(400).json({ status: 'error', message: 'Dữ liệu webhook không hợp lệ' });
@@ -107,6 +150,9 @@ const handlePaymentWebhook = (req, res) => __awaiter(void 0, void 0, void 0, fun
         return res.status(200).json({ status: 'success', data: updated });
     }
     catch (error) {
+        if ((_a = error.message) === null || _a === void 0 ? void 0 : _a.includes('Không tìm thấy')) {
+            return res.status(404).json({ status: 'error', message: error.message });
+        }
         return handleControllerError(res, error, 'Lỗi khi xử lý webhook thanh toán');
     }
 });
@@ -134,11 +180,14 @@ const getMyPayments = (req, res) => __awaiter(void 0, void 0, void 0, function* 
  * // (Đã thêm)
  */
 const getPaymentStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const id = getParam(req.params.id);
-        const payment = yield payments_service_1.default.getPaymentStatus(id);
+        const userId = extractUserId(req);
+        const role = (_a = req.user) === null || _a === void 0 ? void 0 : _a.role;
+        const payment = yield payments_service_1.default.getPaymentStatus(id, userId, role);
         if (!payment) {
-            return res.status(404).json({ status: 'error', message: 'Không tìm thấy giao dịch' });
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy giao dịch hoặc bạn không có quyền truy cập' });
         }
         return res.status(200).json({ status: 'success', payment });
     }

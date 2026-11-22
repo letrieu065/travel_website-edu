@@ -99,7 +99,9 @@ const getMyItinerary = (userId) => __awaiter(void 0, void 0, void 0, function* (
         items: booking.booking_items,
     }));
     return {
+        upcoming: upcomingTrips,
         upcomingTrips,
+        past: pastTrips,
         pastTrips,
         reminders,
         totalBookings: bookings.length,
@@ -115,28 +117,44 @@ const getItineraryDetail = (userId, bookingId) => __awaiter(void 0, void 0, void
     });
     return booking;
 });
-// Danh sách yêu thích (TODO: cần bảng favorites trong schema.prisma để lưu lâu dài)
-const favoriteStore = new Map();
+// Danh sách yêu thích lưu trữ trực tiếp trong PostgreSQL (model favorites)
 const getFavorites = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    return (_a = favoriteStore.get(userId)) !== null && _a !== void 0 ? _a : [];
+    const list = yield prisma_1.default.favorites.findMany({
+        where: { user_id: userId },
+        orderBy: { created_at: 'desc' },
+    });
+    return list.map((f) => ({
+        item_type: f.item_type,
+        item_id: f.item_id,
+    }));
 });
 const addFavorite = (userId, item) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    const list = (_a = favoriteStore.get(userId)) !== null && _a !== void 0 ? _a : [];
-    const exists = list.some((f) => f.item_id === item.item_id && f.item_type === item.item_type);
-    if (!exists) {
-        list.push(item);
-        favoriteStore.set(userId, list);
-    }
-    return list;
+    yield prisma_1.default.favorites.upsert({
+        where: {
+            user_id_item_type_item_id: {
+                user_id: userId,
+                item_type: item.item_type,
+                item_id: item.item_id,
+            },
+        },
+        update: {},
+        create: {
+            user_id: userId,
+            item_type: item.item_type,
+            item_id: item.item_id,
+        },
+    });
+    return getFavorites(userId);
 });
 const removeFavorite = (userId, itemType, itemId) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    const list = (_a = favoriteStore.get(userId)) !== null && _a !== void 0 ? _a : [];
-    const updated = list.filter((f) => !(f.item_id === itemId && f.item_type === itemType));
-    favoriteStore.set(userId, updated);
-    return updated;
+    yield prisma_1.default.favorites.deleteMany({
+        where: {
+            user_id: userId,
+            item_type: itemType,
+            item_id: itemId,
+        },
+    });
+    return getFavorites(userId);
 });
 exports.default = {
     getProfile,

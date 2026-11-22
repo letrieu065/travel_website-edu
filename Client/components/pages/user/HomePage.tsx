@@ -198,16 +198,16 @@ export default async function HomePage() {
                 </div>
 
                 {/* Tabbed Search Box Widget (Overlaid on Bottom Hero) */}
-                <div className="max-w-7xl mx-auto px-6 w-full -mb-10 z-20">
+                <div className="max-w-7xl mx-auto px-6 w-full relative py-6 md:py-0 md:-mb-10 z-20">
                     <HeroSearchWidget />
                 </div>
             </section>
 
             {/* Spacer for Search Widget */}
-            <div className="h-20" />
+            <div className="hidden md:block md:h-20" />
 
             {/* 2. Curated Destinations Grid ("Best in Travel" - Lonely Planet Style) */}
-            <section className="max-w-7xl mx-auto px-6 py-16">
+            <section className="max-w-7xl mx-auto px-6 pt-6 md:pt-24 pb-16">
                 <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <div>
                         <span className="text-xs font-black uppercase tracking-[0.2em] text-gray-500 block mb-2">

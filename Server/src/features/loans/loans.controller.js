@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const loans_service_1 = __importDefault(require("./loans.service"));
+const env_1 = __importDefault(require("../../config/env"));
 // (Đã thêm)
 const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
@@ -27,25 +28,24 @@ const getParam = (param) => {
 };
 // (Đã thêm)
 const extractUserId = (req) => {
-    var _a;
     const reqUser = req.user;
-    if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.userId)
-        return reqUser.userId;
     if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.id)
         return reqUser.id;
+    if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.userId)
+        return reqUser.userId;
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
             const token = authHeader.split(' ')[1];
-            const secret = process.env.JWT_SECRET || 'default_secret_key';
+            const secret = env_1.default.JWT_SECRET;
             const decoded = jsonwebtoken_1.default.verify(token, secret);
-            return decoded.userId || decoded.id || '';
+            return decoded.id || decoded.userId || '';
         }
-        catch (_b) {
+        catch (_a) {
             return '';
         }
     }
-    return req.query.user_id || ((_a = req.body) === null || _a === void 0 ? void 0 : _a.user_id) || '';
+    return '';
 };
 /* ============================== CONTROLLERS ============================== */
 // body: { loan_amount, term_months }

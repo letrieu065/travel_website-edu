@@ -16,9 +16,17 @@ import toursService from './tours.service';
  * Xử lý và chuẩn hóa lỗi cho Tours Controller
  * // (Đã thêm)
  */
+const isValidUUID = (id: string): boolean => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
+
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const msg = error?.message || defaultMessage;
+    if (msg.includes('Không tìm thấy') || error?.code === 'P2025' || error?.code === 'P2007') {
+        return res.status(404).json({ status: 'error', message: msg });
+    }
+    return res.status(500).json({ status: 'error', message: msg });
 };
 
 /**
@@ -53,6 +61,13 @@ const getTours = async (req: Request, res: Response) => {
             min_rating,
             sort,
         } = req.query;
+
+        if (min_price !== undefined && (isNaN(Number(min_price)) || Number(min_price) < 0)) {
+            return res.status(400).json({ status: 'error', message: 'min_price phải là số' });
+        }
+        if (max_price !== undefined && (isNaN(Number(max_price)) || Number(max_price) < 0)) {
+            return res.status(400).json({ status: 'error', message: 'max_price phải là số' });
+        }
 
         const result = await toursService.getTours({
             page: Number(page),
@@ -142,6 +157,9 @@ const getTopTourReviews = async (req: Request, res: Response) => {
 const getTourById = async (req: Request, res: Response) => {
     try {
         const id = getParam(req.params.id);
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy tour (ID không hợp lệ)' });
+        }
         const tour = await toursService.getTourById(id);
         if (!tour) {
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy tour' });
@@ -160,6 +178,9 @@ const getTourById = async (req: Request, res: Response) => {
 const getTourDepartures = async (req: Request, res: Response) => {
     try {
         const id = getParam(req.params.id);
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy tour (ID không hợp lệ)' });
+        }
         const departures = await toursService.getTourDepartures(id);
         return res.status(200).json({ status: 'success', departures });
     } catch (error) {

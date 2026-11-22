@@ -5,16 +5,40 @@ export interface NotificationItem {
     title: string;
     message: string;
     is_read: boolean;
-    created_at: string;
+    created_at: string | Date | null;
 }
 export interface SendEmailInput {
     to: string;
     subject: string;
     html: string;
 }
-declare const getMyNotifications: (userId: string) => Promise<NotificationItem[]>;
-declare const createNotification: (userId: string, type: NotificationItem['type'], title: string, message: string) => Promise<NotificationItem>;
-declare const markAsRead: (userId: string, notificationId: string) => Promise<NotificationItem | null>;
+declare const getMyNotifications: (userId: string) => Promise<{
+    id: string;
+    user_id: string;
+    type: string;
+    title: string;
+    message: string;
+    is_read: boolean;
+    created_at: Date | null;
+}[]>;
+declare const createNotification: (userId: string, type: NotificationItem['type'], title: string, message: string) => Promise<{
+    id: string;
+    user_id: string;
+    type: string;
+    title: string;
+    message: string;
+    is_read: boolean;
+    created_at: Date | null;
+}>;
+declare const markAsRead: (userId: string, notificationId: string) => Promise<{
+    id: string;
+    user_id: string;
+    type: string;
+    title: string;
+    message: string;
+    is_read: boolean;
+    created_at: Date | null;
+} | null>;
 declare const markAllAsRead: (userId: string) => Promise<{
     updated_count: number;
 }>;

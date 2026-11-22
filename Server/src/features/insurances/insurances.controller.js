@@ -66,12 +66,18 @@ const calculateFee = (req, res) => __awaiter(void 0, void 0, void 0, function* (
 });
 // body: { booking_id, package_id, guests }
 const attachInsuranceToBooking = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
     try {
+        const userId = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || ((_b = req.user) === null || _b === void 0 ? void 0 : _b.userId);
+        const role = (_c = req.user) === null || _c === void 0 ? void 0 : _c.role;
+        if (!userId) {
+            return res.status(401).json({ status: 'error', message: 'Chưa xác thực người dùng' });
+        }
         const { booking_id, package_id, guests = 1 } = req.body;
         if (!booking_id || !package_id) {
             return res.status(400).json({ status: 'error', message: 'Vui lòng cung cấp booking_id và package_id' });
         }
-        const data = yield insurances_service_1.default.attachInsuranceToBooking(booking_id, package_id, Number(guests));
+        const data = yield insurances_service_1.default.attachInsuranceToBooking(booking_id, package_id, Number(guests), userId, role);
         return res.status(200).json({ status: 'success', message: 'Đã thêm bảo hiểm vào đơn đặt chỗ', data });
     }
     catch (error) {

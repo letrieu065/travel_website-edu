@@ -28,6 +28,8 @@ export default function RegisterPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Registration flow state: 'form' (bước 1) hoặc 'otp' (bước 2)
     const [step, setStep] = useState<'form' | 'otp'>('form');
@@ -57,6 +59,11 @@ export default function RegisterPage() {
 
         if (password.length < 6) {
             setErrorMessage('Mật khẩu phải có độ dài tối thiểu 6 ký tự!');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setErrorMessage('Mật khẩu xác nhận không trùng khớp!');
             return;
         }
 
@@ -330,6 +337,31 @@ export default function RegisterPage() {
                                             aria-label="Ẩn hiện mật khẩu"
                                         >
                                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-black uppercase tracking-wider text-gray-600 mb-1">
+                                        Xác Nhận Mật Khẩu *
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type={showConfirmPassword ? 'text' : 'password'}
+                                            placeholder="Nhập lại mật khẩu"
+                                            minLength={6}
+                                            className="w-full px-3 py-2.5 pr-10 text-xs font-semibold border border-gray-200 focus:outline-none focus:border-black transition-colors"
+                                            required
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-3 text-gray-400 hover:text-black transition-colors"
+                                            aria-label="Ẩn hiện xác nhận mật khẩu"
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                     </div>
                                 </div>

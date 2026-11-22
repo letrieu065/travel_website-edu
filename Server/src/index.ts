@@ -25,7 +25,52 @@ const app: Express = express();
 
 // 1. Cài đặt Global Middlewares
 app.use(helmet()); // Bảo mật HTTP headers
-app.use(cors()); // Cấu hình CORS
+
+// Cấu hình CORS nghiêm ngặt theo Whitelist Domain
+const clientUrls = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map((url) => url.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+const allowedOrigins = [
+  ...clientUrls,
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:3002',
+];
+
+const isAllowedOrigin = (origin: string): boolean => {
+  const normalizedOrigin = origin.replace(/\/$/, '');
+  if (allowedOrigins.includes(normalizedOrigin)) {
+    return true;
+  }
+  // Cho phép tất cả các cổng localhost / 127.0.0.1 khi ở môi trường development
+  if (process.env.NODE_ENV !== 'production') {
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalizedOrigin)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Cho phép requests không có origin (mobile apps, server-to-server, curl) hoặc origin nằm trong whitelist
+      if (!origin || isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Blocked by CORS policy'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-signature', 'x-webhook-secret'],
+  })
+);
+
 app.use(express.json()); // Parse body JSON
 
 // 2. Gắn kết các Routes (API Endpoints - v1)
@@ -57,8 +102,14 @@ app.get('/health', (req: Request, res: Response) => {
 
 // 3. Global Error Handler (Middleware xử lý lỗi chung)
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  if (err.message === 'Blocked by CORS policy') {
+    return res.status(403).json({ status: 'error', message: 'Blocked by CORS policy' });
+  }
   console.error(err.stack);
-  res.status(500).json({ status: 'error', message: 'Đã có lỗi xảy ra trên server!' });
+  const message = process.env.NODE_ENV === 'production'
+    ? 'Đã có sự cố xảy ra trên hệ thống, vui lòng thử lại sau'
+    : (err.message || 'Đã có lỗi xảy ra trên server!');
+  res.status(500).json({ status: 'error', message });
 });
 
 export default app;

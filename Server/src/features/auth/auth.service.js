@@ -25,6 +25,7 @@ const google_auth_library_1 = require("google-auth-library");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const axios_1 = __importDefault(require("axios"));
 const nodemailer_1 = __importDefault(require("nodemailer"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
 const prisma_1 = __importDefault(require("../../config/prisma"));
 // (Đã thêm)
 const googleClient = new google_auth_library_1.OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -33,7 +34,7 @@ const generateSystemToken = (user) => {
     return jsonwebtoken_1.default.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 // (Đã thêm)
-const loginWithGoogle = (accessToken) => __awaiter(void 0, void 0, void 0, function* () {
+const loginWithGoogle = (accessToken, confirmPassword) => __awaiter(void 0, void 0, void 0, function* () {
     const response = yield fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: {
             Authorization: `Bearer ${accessToken}`
@@ -52,11 +53,23 @@ const loginWithGoogle = (accessToken) => __awaiter(void 0, void 0, void 0, funct
             data: {
                 full_name: name || 'Người dùng Google',
                 email: email,
-                google_id: googleId
+                google_id: googleId,
+                auth_provider: 'google'
             }
         });
     }
     else if (!user.google_id) {
+        // Chặn liên kết tài khoản OAuth không an toàn (Insecure Account Linking)
+        // Nếu tài khoản đã tồn tại với email/mật khẩu thông thường (local), phải xác nhận mật khẩu hiện tại
+        if (user.auth_provider === 'local' && user.password_hash) {
+            if (!confirmPassword) {
+                throw new Error('Tài khoản này đã được đăng ký bằng email và mật khẩu cục bộ. Vui lòng xác nhận mật khẩu hiện tại để liên kết tài khoản.');
+            }
+            const isMatch = yield bcrypt_1.default.compare(confirmPassword, user.password_hash);
+            if (!isMatch) {
+                throw new Error('Mật khẩu xác nhận không chính xác để liên kết tài khoản');
+            }
+        }
         user = yield prisma_1.default.users.update({
             where: { email: email },
             data: { google_id: googleId }
@@ -66,11 +79,11 @@ const loginWithGoogle = (accessToken) => __awaiter(void 0, void 0, void 0, funct
     return { user, token: systemToken };
 });
 // (Đã thêm)
-const loginWithFacebook = (fbAccessToken) => __awaiter(void 0, void 0, void 0, function* () {
+const loginWithFacebook = (fbAccessToken, confirmPassword) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const url = `https://graph.facebook.com/me?fields=id,name,email&access_token=${fbAccessToken}`;
         const response = yield axios_1.default.get(url);
-        const { id: facebookId, email, name: full_name, picture } = response.data;
+        const { id: facebookId, email, name: full_name } = response.data;
         // Kiểm tra xem user đã tồn tại trong Database (Prisma) chưa
         let user = yield prisma_1.default.users.findUnique({
             where: { email: email }
@@ -79,10 +92,27 @@ const loginWithFacebook = (fbAccessToken) => __awaiter(void 0, void 0, void 0, f
             user = yield prisma_1.default.users.create({
                 data: {
                     email: email,
-                    full_name: full_name,
+                    full_name: full_name || 'Người dùng Facebook',
                     facebook_id: facebookId,
+                    auth_provider: 'facebook',
                     role: 'user'
                 }
+            });
+        }
+        else if (!user.facebook_id) {
+            // Chặn liên kết tài khoản OAuth không an toàn (Insecure Account Linking)
+            if (user.auth_provider === 'local' && user.password_hash) {
+                if (!confirmPassword) {
+                    throw new Error('Tài khoản này đã được đăng ký bằng email và mật khẩu cục bộ. Vui lòng xác nhận mật khẩu hiện tại để liên kết tài khoản.');
+                }
+                const isMatch = yield bcrypt_1.default.compare(confirmPassword, user.password_hash);
+                if (!isMatch) {
+                    throw new Error('Mật khẩu xác nhận không chính xác để liên kết tài khoản');
+                }
+            }
+            user = yield prisma_1.default.users.update({
+                where: { email: email },
+                data: { facebook_id: facebookId }
             });
         }
         // Tạo Token hệ thống trả về cho Frontend
@@ -90,7 +120,7 @@ const loginWithFacebook = (fbAccessToken) => __awaiter(void 0, void 0, void 0, f
         return { user, token };
     }
     catch (error) {
-        throw new Error('Lỗi xác thực với Facebook: ' + error.message);
+        throw new Error(error.message || 'Lỗi xác thực với Facebook');
     }
 });
 const transporter = nodemailer_1.default.createTransport({
@@ -100,11 +130,14 @@ const transporter = nodemailer_1.default.createTransport({
         pass: process.env.GMAIL_APP_PASSWORD
     }
 });
+const maskEmail = (email) => {
+    return email.replace(/(^.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(Math.max(b.length, 3)));
+};
 // (Đã thêm)
 const sendOtpEmail = (toEmail, otpCode) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("Đã gửi mã xác thực tới email " + maskEmail(toEmail));
     try {
         if (!process.env.MY_GMAIL || !process.env.GMAIL_APP_PASSWORD) {
-            console.log(`[DEV MODE - OTP QUÊN MẬT KHẨU] Mã OTP gửi tới ${toEmail}: ${otpCode}`);
             return;
         }
         yield transporter.sendMail({
@@ -116,14 +149,13 @@ const sendOtpEmail = (toEmail, otpCode) => __awaiter(void 0, void 0, void 0, fun
     }
     catch (err) {
         console.error('Lỗi khi gửi email OTP khôi phục mật khẩu:', err);
-        console.log(`[FALLBACK DEV OTP QUÊN MẬT KHẨU] Mã OTP cho ${toEmail}: ${otpCode}`);
     }
 });
 // (Đã thêm)
 const sendRegisterOtpEmail = (toEmail, otpCode) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("Đã gửi mã xác thực tới email " + maskEmail(toEmail));
     try {
         if (!process.env.MY_GMAIL || !process.env.GMAIL_APP_PASSWORD) {
-            console.log(`[DEV MODE - OTP ĐĂNG KÝ] Mã OTP gửi tới ${toEmail} là: ${otpCode}`);
             return;
         }
         yield transporter.sendMail({
@@ -158,7 +190,6 @@ const sendRegisterOtpEmail = (toEmail, otpCode) => __awaiter(void 0, void 0, voi
     }
     catch (err) {
         console.error('Lỗi khi gửi mail OTP đăng ký qua Nodemailer:', err);
-        console.log(`[FALLBACK DEV OTP ĐĂNG KÝ] Mã OTP cho ${toEmail}: ${otpCode}`);
     }
 });
 exports.default = {

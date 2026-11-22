@@ -11,7 +11,7 @@ router.get('/contact-channels', notifications_controller_1.default.getContactCha
 router.get('/', auth_middleware_1.authenticate, notifications_controller_1.default.getMyNotifications);
 router.patch('/read-all', auth_middleware_1.authenticate, notifications_controller_1.default.markAllAsRead);
 router.patch('/:id/read', auth_middleware_1.authenticate, notifications_controller_1.default.markAsRead);
-router.post('/send-email', auth_middleware_1.authenticate, notifications_controller_1.default.sendEmail);
+router.post('/send-email', auth_middleware_1.authenticate, auth_middleware_1.requireAdmin, notifications_controller_1.default.sendEmail);
 exports.default = router;
 // Gắn vào index.ts:
 // import notificationsRoute from './features/notifications/notifications.route';

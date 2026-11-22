@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"] as const;
@@ -53,12 +53,19 @@ interface DatePickerProps {
 export default function DatePicker({
   value,
   onChange,
-  minDate = new Date(new Date().setHours(0, 0, 0, 0)),
+  minDate,
   placeholder = "Select date",
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState<Date>(value || new Date());
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  const effectiveMinDate = useMemo(() => {
+    if (minDate !== undefined) return minDate;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }, [minDate]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -79,7 +86,7 @@ export default function DatePicker({
 
   const handlePick = (date: Date | null) => {
     if (!date) return;
-    if (minDate && date < minDate) return;
+    if (effectiveMinDate && date < effectiveMinDate) return;
     onChange(date);
     setOpen(false);
   };
@@ -135,7 +142,7 @@ export default function DatePicker({
           {/* Day cells */}
           <div className="grid grid-cols-7 gap-1">
             {weeks.flat().map((date, i) => {
-              const disabled = !!(date && minDate && date < minDate);
+              const disabled = !!(date && effectiveMinDate && date < effectiveMinDate);
               const selected = isSameDay(date, value);
               const today = isSameDay(date, new Date());
 

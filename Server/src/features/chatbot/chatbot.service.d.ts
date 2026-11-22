@@ -28,15 +28,15 @@ declare const getChatHistory: (sessionId: string) => Promise<{
     timestamp: string;
 }[]>;
 declare const createSupportTicket: (input: SupportTicketInput) => Promise<{
-    user_id?: string;
+    id: string;
+    user_id: string | null;
     full_name: string;
     email: string;
-    phone_number?: string;
+    phone_number: string | null;
     subject: string;
     content: string;
-    id: string;
     status: string;
-    created_at: string;
+    created_at: Date | null;
 }>;
 declare const _default: {
     sendMessage: typeof sendMessage;

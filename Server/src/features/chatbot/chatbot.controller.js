@@ -12,11 +12,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const crypto_1 = __importDefault(require("crypto"));
 const chatbot_service_1 = __importDefault(require("./chatbot.service"));
 // (Đã thêm)
 const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const isProd = process.env.NODE_ENV === 'production';
+    return res.status(500).json({
+        status: 'error',
+        message: isProd ? 'Đã có sự cố xảy ra trên hệ thống, vui lòng thử lại sau' : (error.message || defaultMessage),
+    });
 };
 // (Đã thêm)
 const getParam = (param) => {
@@ -28,11 +33,15 @@ const getParam = (param) => {
 // body: { session_id, user_id, message }
 const sendMessage = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { session_id = 'default_session', user_id, message } = req.body;
-        if (!message) {
+        let { session_id, user_id, message } = req.body;
+        if (!message || typeof message !== 'string' || !message.trim()) {
             return res.status(400).json({ status: 'error', message: 'Nội dung tin nhắn không được để trống' });
         }
-        const result = yield chatbot_service_1.default.sendMessage({ session_id, user_id, message });
+        // Chặn default_session, tự động tạo UUID v4 chuẩn nếu client chưa cung cấp hoặc gửi default_session
+        if (!session_id || session_id === 'default_session') {
+            session_id = crypto_1.default.randomUUID();
+        }
+        const result = yield chatbot_service_1.default.sendMessage({ session_id, user_id, message: message.trim() });
         return res.status(200).json({ status: 'success', data: result });
     }
     catch (error) {
@@ -52,6 +61,12 @@ const getFaqs = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 const getChatHistory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const sessionId = getParam(req.params.sessionId);
+        if (!sessionId || sessionId === 'default_session') {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Session ID không hợp lệ hoặc không được phép tra cứu',
+            });
+        }
         const history = yield chatbot_service_1.default.getChatHistory(sessionId);
         return res.status(200).json({ status: 'success', history });
     }

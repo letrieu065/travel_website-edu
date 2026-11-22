@@ -16,9 +16,10 @@ const admin_service_1 = __importDefault(require("./admin.service"));
 // (Đã thêm)
 const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
+    const isProd = process.env.NODE_ENV === 'production';
     return res.status(500).json({
         status: 'error',
-        message: error.message || defaultMessage,
+        message: isProd ? 'Đã có sự cố xảy ra trên hệ thống, vui lòng thử lại sau' : (error.message || defaultMessage),
     });
 };
 // (Đã thêm)
@@ -61,6 +62,7 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 // body: UserData
 const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
         const { email, password, full_name, phone_number, avatar_url, role } = req.body;
         if (!email || !full_name) {
@@ -77,6 +79,9 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         return res.status(201).json({ status: 'success', message: 'Tạo người dùng thành công', data: newUser });
     }
     catch (error) {
+        if (((_a = error.message) === null || _a === void 0 ? void 0 : _a.includes('Mật khẩu')) || ((_b = error.message) === null || _b === void 0 ? void 0 : _b.includes('Email đã được sử dụng'))) {
+            return res.status(400).json({ status: 'error', message: error.message });
+        }
         return handleControllerError(res, error, 'Lỗi khi tạo người dùng');
     }
 });

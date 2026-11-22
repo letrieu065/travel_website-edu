@@ -131,6 +131,7 @@ function TourDetailContent({
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState('');
     const [bookingSuccess, setBookingSuccess] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         let isCancelled = false;
@@ -198,27 +199,33 @@ function TourDetailContent({
     }, [tourId]);
 
     // (Đã thêm)
-    const handleBookingSubmit = (e: React.FormEvent) => {
+    const handleBookingSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const selectedDep = departures.find((d) => d.id === selectedDepartureId);
-        if (!selectedDep && departures.length > 0) {
-            alert('Vui lòng chọn ngày khởi hành hợp lệ');
-            return;
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            const selectedDep = departures.find((d) => d.id === selectedDepartureId);
+            if (!selectedDep && departures.length > 0) {
+                alert('Vui lòng chọn ngày khởi hành hợp lệ');
+                return;
+            }
+
+            const unitPrice = selectedDep ? Number(selectedDep.discount_price ?? selectedDep.price) : Number(tour?.discountPrice ?? tour?.price ?? 0);
+            const totalPrice = unitPrice * passengerCount;
+
+            const checkoutParams = new URLSearchParams({
+                type: 'tour',
+                tour_id: tour?.id || tourId,
+                departure_id: selectedDepartureId || '',
+                guests: String(passengerCount),
+                price: String(totalPrice),
+                title: tour?.title || 'Tour du lịch Natura Travel',
+            });
+
+            router.push(`/checkout?${checkoutParams.toString()}`);
+        } finally {
+            setIsSubmitting(false);
         }
-
-        const unitPrice = selectedDep ? Number(selectedDep.discount_price ?? selectedDep.price) : Number(tour?.discountPrice ?? tour?.price ?? 0);
-        const totalPrice = unitPrice * passengerCount;
-
-        const checkoutParams = new URLSearchParams({
-            type: 'tour',
-            tour_id: tour?.id || tourId,
-            departure_id: selectedDepartureId || '',
-            guests: String(passengerCount),
-            price: String(totalPrice),
-            title: tour?.title || 'Tour du lịch Natura Travel',
-        });
-
-        router.push(`/checkout?${checkoutParams.toString()}`);
     };
 
     if (isLoading) {
@@ -616,9 +623,17 @@ function TourDetailContent({
                                 ) : (
                                     <button
                                         type="submit"
-                                        className="w-full bg-black text-white hover:bg-gray-800 py-3 px-4 text-xs font-black uppercase tracking-widest transition-colors shadow-md"
+                                        disabled={isSubmitting}
+                                        className="w-full bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed py-3 px-4 text-xs font-black uppercase tracking-widest transition-colors shadow-md flex items-center justify-center gap-2"
                                     >
-                                        Đặt Tour Ngay
+                                        {isSubmitting ? (
+                                            <>
+                                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                Đang xử lý...
+                                            </>
+                                        ) : (
+                                            'Đặt Tour Ngay'
+                                        )}
                                     </button>
                                 )}
                             </form>

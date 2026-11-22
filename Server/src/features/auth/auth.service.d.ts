@@ -7,7 +7,7 @@
  * - Cấu hình Nodemailer gửi email OTP khôi phục mật khẩu và xác thực đăng ký tài khoản.
  * ============================================================================
  */
-declare const loginWithGoogle: (accessToken: string) => Promise<{
+declare const loginWithGoogle: (accessToken: string, confirmPassword?: string) => Promise<{
     user: {
         id: string;
         email: string;
@@ -23,7 +23,7 @@ declare const loginWithGoogle: (accessToken: string) => Promise<{
     };
     token: string;
 }>;
-declare const loginWithFacebook: (fbAccessToken: string) => Promise<{
+declare const loginWithFacebook: (fbAccessToken: string, confirmPassword?: string) => Promise<{
     user: {
         id: string;
         email: string;

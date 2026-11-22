@@ -13,7 +13,7 @@
  * ============================================================================
  */
 
-import React, { useState, Suspense, useMemo } from 'react';
+import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -89,7 +89,43 @@ function CheckoutContent() {
         bookingId: string;
         amount: number;
         transactionId: string;
+        paymentId?: string;
     } | null>(null);
+
+    // Tự động kiểm tra trạng thái giao dịch VietQR mỗi 3s (Polling)
+    useEffect(() => {
+        if (!qrData?.paymentId) return;
+
+        let isPolling = true;
+        const token = localStorage.getItem('token');
+        const intervalId = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/v1/payments/${qrData.paymentId}/status`, {
+                    headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success' && data.payment?.payment_status === 'paid') {
+                        clearInterval(intervalId);
+                        if (isPolling) {
+                            router.push(
+                                `/checkout/success?booking_id=${qrData.bookingId}&amount=${qrData.amount}&method=bank_transfer`
+                            );
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Lỗi kiểm tra trạng thái thanh toán:', err);
+            }
+        }, 3000);
+
+        return () => {
+            isPolling = false;
+            clearInterval(intervalId);
+        };
+    }, [qrData, router]);
 
     // Final price calculate
     const totalPrice = useMemo(() => {
@@ -185,17 +221,22 @@ function CheckoutContent() {
             if (paymentMethod === 'bank_transfer') {
                 const qrUrl =
                     paymentJson.payment_url ||
-                    `https://img.vietqr.io/image/MB-0000000000-compact2.png?amount=${createdBooking.total_price}&addInfo=${bookingId.slice(0, 8)}`;
+                    `https://img.vietqr.io/image/MB-0000000000-compact2.png?amount=${createdBooking.total_price}&addInfo=${paymentJson.transaction_id || bookingId.slice(0, 8)}`;
                 setQrData({
                     qrUrl,
                     bookingId,
                     amount: Number(createdBooking.total_price),
                     transactionId: paymentJson.transaction_id || `TXN_${Date.now()}`,
+                    paymentId: paymentJson.payment?.id || paymentJson.id,
                 });
+            } else if (paymentMethod === 'vnpay' && paymentJson.payment_url) {
+                // Chuyển hướng trình duyệt sang cổng thanh toán Sandbox của VNPay
+                window.location.href = paymentJson.payment_url;
             } else if (paymentMethod === 'momo' && paymentJson.payment_url) {
                 window.location.href = paymentJson.payment_url;
+            } else if (paymentJson.payment_url) {
+                window.location.href = paymentJson.payment_url;
             } else {
-                // Default or VNPay -> Success page
                 router.push(
                     `/checkout/success?booking_id=${bookingId}&amount=${createdBooking.total_price}&method=${paymentMethod}`
                 );
@@ -206,14 +247,6 @@ function CheckoutContent() {
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    // (Đã thêm)
-    const handleConfirmTransferDone = () => {
-        if (!qrData) return;
-        router.push(
-            `/checkout/success?booking_id=${qrData.bookingId}&amount=${qrData.amount}&method=bank_transfer`
-        );
     };
 
     return (
@@ -586,26 +619,22 @@ function CheckoutContent() {
                                 <span className="text-gray-500">Mã giao dịch:</span>
                                 <span className="font-mono font-bold text-gray-800">{qrData.transactionId}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                                 <span className="text-gray-500">Trạng thái:</span>
-                                <span className="text-amber-600 font-bold">Chờ nhận tiền...</span>
+                                <span className="text-amber-600 font-bold flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                                    Đang chờ nhận tiền (tự động kiểm tra mỗi 3s)...
+                                </span>
                             </div>
                         </div>
 
                         <div className="flex flex-col gap-2">
                             <button
                                 type="button"
-                                onClick={handleConfirmTransferDone}
-                                className="w-full bg-black text-[#FACC15] hover:bg-gray-800 py-3 text-xs font-black uppercase tracking-widest"
-                            >
-                                Tôi Đã Chuyển Khoản Thành Công
-                            </button>
-                            <button
-                                type="button"
                                 onClick={() => setQrData(null)}
                                 className="w-full border border-gray-200 py-2.5 text-xs font-bold text-gray-600 hover:text-black"
                             >
-                                Đóng lại
+                                Hủy giao dịch / Đóng lại
                             </button>
                         </div>
                     </div>

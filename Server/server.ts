@@ -1,27 +1,39 @@
 import 'dotenv/config';
+import env from './src/config/env';
 import app from './src/index';
-import prisma from './src/config/prisma';
+import prisma, { pool } from './src/config/prisma';
 
-const PORT = process.env.PORT || 3000;
+const PORT = env.PORT || process.env.PORT || 3000;
 
 const startServer = async () => {
   try {
-    prisma.$connect()
-      .then(() => console.log('Đã kết nối Database PostgreSQL thành công!'))
-      .catch((err: Error) => console.error('Lỗi kết nối Database:', err));
-    console.log('✅ Kết nối Database thành công.');
+    await prisma.$connect();
+    console.log('✅ Đã kết nối Database PostgreSQL thành công!');
 
     const server = app.listen(PORT, () => {
       console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
     });
 
-    process.on('SIGINT', () => {
-      console.log('\n🛑 Đang đóng các kết nối an toàn...');
-      server.close(() => {
-        console.log('✅ Server đã tắt hoàn toàn.');
-        process.exit(0);
+    let isShuttingDown = false;
+    const gracefulShutdown = async (signal: string) => {
+      if (isShuttingDown) return;
+      isShuttingDown = true;
+      console.log(`\n🛑 Nhận tín hiệu ${signal}. Đang đóng các kết nối an toàn...`);
+      server.close(async () => {
+        try {
+          await prisma.$disconnect();
+          await pool.end();
+          console.log('✅ Server đã tắt hoàn toàn.');
+          process.exit(0);
+        } catch (error) {
+          console.error('Lỗi khi đóng kết nối:', error);
+          process.exit(1);
+        }
       });
-    });
+    };
+
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
   } catch (error) {
     console.error('Lỗi khi khởi động server:', error);

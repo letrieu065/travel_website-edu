@@ -12,6 +12,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import userService from './user.service';
+import env from '../../config/env';
 
 /**
  * Xử lý lỗi chuẩn cho Users Controller
@@ -19,7 +20,14 @@ import userService from './user.service';
  */
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const msg = error?.message || defaultMessage;
+    if (msg.includes('Mật khẩu hiện tại không chính xác') || msg.includes('không chính xác') || msg.includes('không hợp lệ')) {
+        return res.status(400).json({ status: 'error', message: msg });
+    }
+    if (msg.includes('Không tìm thấy') || error?.code === 'P2025' || error?.code === 'P2007') {
+        return res.status(404).json({ status: 'error', message: msg });
+    }
+    return res.status(500).json({ status: 'error', message: msg });
 };
 
 /**
@@ -37,22 +45,22 @@ const getParam = (param: string | string[] | undefined): string => {
  */
 const extractUserId = (req: Request): string => {
     const reqUser = (req as any).user;
-    if (reqUser?.userId) return reqUser.userId;
     if (reqUser?.id) return reqUser.id;
+    if (reqUser?.userId) return reqUser.userId;
 
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
             const token = authHeader.split(' ')[1];
-            const secret = process.env.JWT_SECRET || 'default_secret_key';
+            const secret = env.JWT_SECRET;
             const decoded: any = jwt.verify(token, secret);
-            return decoded.userId || decoded.id || '';
+            return decoded.id || decoded.userId || '';
         } catch {
             return '';
         }
     }
 
-    return (req.query.user_id as string) || (req.body?.user_id as string) || '';
+    return '';
 };
 
 /* ============================== CONTROLLERS ============================== */

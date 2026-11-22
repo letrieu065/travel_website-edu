@@ -13,7 +13,7 @@ import { Request, Response } from 'express';
  * Khởi tạo giao dịch thanh toán mới cho đơn đặt chỗ
  * - Endpoint: POST /api/v1/payments/create
  * - Body: { booking_id: string, payment_method: PaymentMethod }
- * - Hỗ trợ: 'momo', 'bank_transfer', 'vnpay', 'f88_loan'
+ * - Hỗ trợ: 'vietqr', 'momo', 'bank_transfer', 'vnpay', 'f88_loan'
  * // (Đã thêm)
  */
 declare const createPayment: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;

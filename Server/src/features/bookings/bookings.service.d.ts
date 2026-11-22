@@ -27,6 +27,7 @@ export interface CreateBookingData {
     items: BookingItemInput[];
     payment_method?: string;
     discount_amount?: number;
+    coupon_code?: string;
 }
 /**
  * Tạo mới đơn đặt chỗ sử dụng Prisma Transaction
@@ -127,7 +128,8 @@ declare const getBookingById: (userId: string, bookingId: string) => Promise<({
  * Hủy đơn đặt chỗ và hoàn trả số lượng ghế / phòng khả dụng về kho
  * - Nếu đã thanh toán: Cập nhật payment_status thành 'refund_requested'
  * - Nếu chưa thanh toán: Chuyển payment_status sang 'failed'
- * - Tự động hoàn trả available_seats / available_rooms
+ * - Tự động hoàn trả available_seats / available_rooms trong Transaction nguyên tử
+ * - Chống Inventory Replay Attack: Kiểm tra đơn đã hủy trước đó
  * // (Đã thêm)
  */
 declare const cancelBooking: (userId: string, bookingId: string) => Promise<{

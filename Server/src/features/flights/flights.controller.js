@@ -24,12 +24,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const flights_service_1 = __importDefault(require("./flights.service"));
 /**
+ * Kiểm tra định dạng UUID v4 hợp lệ
+ * // (Đã thêm)
+ */
+const isValidUUID = (id) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
+/**
  * Xử lý lỗi chuẩn cho Flights Controller
  * // (Đã thêm)
  */
 const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const msg = (error === null || error === void 0 ? void 0 : error.message) || defaultMessage;
+    if (msg.includes('Không tìm thấy') || (error === null || error === void 0 ? void 0 : error.code) === 'P2025' || (error === null || error === void 0 ? void 0 : error.code) === 'P2007') {
+        return res.status(404).json({ status: 'error', message: msg });
+    }
+    return res.status(500).json({ status: 'error', message: msg });
 };
 /**
  * Trích xuất an toàn giá trị string từ route params
@@ -76,6 +87,9 @@ const getFlights = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 const getFlightById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const id = getParam(req.params.id);
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy chuyến bay (ID không hợp lệ)' });
+        }
         const flight = yield flights_service_1.default.getFlightById(id);
         if (!flight) {
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy chuyến bay' });

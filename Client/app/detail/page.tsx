@@ -27,6 +27,7 @@ import {
     ArrowRight,
     LogOut,
     FileText,
+    RefreshCw,
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setProfile, clearProfile } from '@/redux/userSlice';
@@ -101,6 +102,8 @@ export default function UserDetailPage() {
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
     const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     useEffect(() => {
@@ -115,6 +118,9 @@ export default function UserDetailPage() {
             }
 
             try {
+                setIsLoading(true);
+                setError(null);
+
                 const [profileRes, itineraryRes, favoritesRes] = await Promise.all([
                     fetch(`${API_URL}/api/v1/users/profile`, {
                         headers: { Authorization: `Bearer ${token}` },
@@ -134,17 +140,19 @@ export default function UserDetailPage() {
                     return;
                 }
 
-                if (profileRes.ok) {
-                    const profileData = await profileRes.json();
-                    const u = profileData.user;
-                    if (u && !isCancelled) {
-                        setFullName(u.full_name || u.fullName || u.name || '');
-                        setPhoneNumber(u.phone_number || u.phoneNumber || '');
-                        setAvatarUrl(u.avatar_url || u.avatarUrl || u.avatar || '');
-                        setEmail(u.email || '');
-                        setRole(u.role || 'Khách hàng thân thiết');
-                        dispatch(setProfile(u));
-                    }
+                if (!profileRes.ok) {
+                    throw new Error(`Không thể tải thông tin hồ sơ (Mã phản hồi: ${profileRes.status})`);
+                }
+
+                const profileData = await profileRes.json();
+                const u = profileData.user;
+                if (u && !isCancelled) {
+                    setFullName(u.full_name || u.fullName || u.name || '');
+                    setPhoneNumber(u.phone_number || u.phoneNumber || '');
+                    setAvatarUrl(u.avatar_url || u.avatarUrl || u.avatar || '');
+                    setEmail(u.email || '');
+                    setRole(u.role || 'Khách hàng thân thiết');
+                    dispatch(setProfile(u));
                 }
 
                 if (itineraryRes.ok) {
@@ -162,8 +170,12 @@ export default function UserDetailPage() {
                     const favData = await favoritesRes.json();
                     if (!isCancelled) setFavorites(favData.data || []);
                 }
-            } catch (err) {
+            } catch (err: unknown) {
                 console.error('Lỗi khi tải thông tin cá nhân:', err);
+                if (!isCancelled) {
+                    const msg = err instanceof Error ? err.message : 'Không thể tải thông tin cá nhân. Vui lòng kiểm tra kết nối mạng và thử lại.';
+                    setError(msg);
+                }
             } finally {
                 if (!isCancelled) {
                     setIsLoading(false);
@@ -176,7 +188,7 @@ export default function UserDetailPage() {
         return () => {
             isCancelled = true;
         };
-    }, [dispatch, router]);
+    }, [dispatch, router, retryCount]);
 
     // (Đã thêm)
     const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -281,8 +293,55 @@ export default function UserDetailPage() {
         );
     }
 
+    if (error && !fullName && !email) {
+        return (
+            <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center py-20 px-6">
+                <div className="max-w-md w-full bg-white border border-red-200 p-8 text-center shadow-lg">
+                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-lg font-black uppercase tracking-tight text-gray-900 mb-2 font-serif">
+                        Không thể tải thông tin hồ sơ
+                    </h2>
+                    <p className="text-xs text-gray-600 mb-6">{error}</p>
+                    <div className="flex gap-3 justify-center">
+                        <button
+                            type="button"
+                            onClick={() => setRetryCount((prev) => prev + 1)}
+                            className="bg-black text-[#FACC15] hover:bg-gray-800 px-6 py-3 text-xs font-black uppercase tracking-wider flex items-center gap-2"
+                        >
+                            <RefreshCw className="w-4 h-4" /> Thử lại
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => router.push('/')}
+                            className="border border-gray-300 hover:border-black px-6 py-3 text-xs font-bold text-gray-700 uppercase"
+                        >
+                            Về Trang Chủ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-[#FDFBF7] text-gray-900 pb-24">
+            {error && (
+                <div className="bg-red-50 border-b border-red-200 py-3 px-6 lg:px-12">
+                    <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 text-red-700 text-xs font-semibold">
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setRetryCount((prev) => prev + 1)}
+                            className="px-3 py-1 bg-red-600 text-white text-[11px] font-black uppercase tracking-wider hover:bg-red-700 transition-colors"
+                        >
+                            Thử lại
+                        </button>
+                    </div>
+                </div>
+            )}
             {/* Header Banner */}
             <div className="bg-[#0f141e] text-white py-12 px-6 lg:px-12 border-b border-gray-800">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">

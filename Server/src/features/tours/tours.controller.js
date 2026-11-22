@@ -27,9 +27,16 @@ const tours_service_1 = __importDefault(require("./tours.service"));
  * Xử lý và chuẩn hóa lỗi cho Tours Controller
  * // (Đã thêm)
  */
+const isValidUUID = (id) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
 const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const msg = (error === null || error === void 0 ? void 0 : error.message) || defaultMessage;
+    if (msg.includes('Không tìm thấy') || (error === null || error === void 0 ? void 0 : error.code) === 'P2025' || (error === null || error === void 0 ? void 0 : error.code) === 'P2007') {
+        return res.status(404).json({ status: 'error', message: msg });
+    }
+    return res.status(500).json({ status: 'error', message: msg });
 };
 /**
  * Trích xuất an toàn giá trị string từ route params
@@ -50,6 +57,12 @@ const getParam = (param) => {
 const getTours = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { page = 1, limit = 10, search, tour_type, destination, departure_location, min_price, max_price, start_date, min_rating, sort, } = req.query;
+        if (min_price !== undefined && (isNaN(Number(min_price)) || Number(min_price) < 0)) {
+            return res.status(400).json({ status: 'error', message: 'min_price phải là số' });
+        }
+        if (max_price !== undefined && (isNaN(Number(max_price)) || Number(max_price) < 0)) {
+            return res.status(400).json({ status: 'error', message: 'max_price phải là số' });
+        }
         const result = yield tours_service_1.default.getTours({
             page: Number(page),
             limit: Number(limit),
@@ -137,6 +150,9 @@ const getTopTourReviews = (req, res) => __awaiter(void 0, void 0, void 0, functi
 const getTourById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const id = getParam(req.params.id);
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy tour (ID không hợp lệ)' });
+        }
         const tour = yield tours_service_1.default.getTourById(id);
         if (!tour) {
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy tour' });
@@ -155,6 +171,9 @@ const getTourById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 const getTourDepartures = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const id = getParam(req.params.id);
+        if (!isValidUUID(id)) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy tour (ID không hợp lệ)' });
+        }
         const departures = yield tours_service_1.default.getTourDepartures(id);
         return res.status(200).json({ status: 'success', departures });
     }

@@ -4,7 +4,6 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
-    //"outDir": "./dist",
     "sourceMap": true,
     "declaration": true,
     "esModuleInterop": true,
@@ -15,11 +14,11 @@
     ]
   },
   "include": [
-    "src/**/*",
-    "prisma7.config.ts"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "prisma7.config.ts"
   ]
 }

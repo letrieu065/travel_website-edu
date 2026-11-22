@@ -1,10 +1,15 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import chatbotService from './chatbot.service';
 
 // (Đã thêm)
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const isProd = process.env.NODE_ENV === 'production';
+    return res.status(500).json({
+        status: 'error',
+        message: isProd ? 'Đã có sự cố xảy ra trên hệ thống, vui lòng thử lại sau' : (error.message || defaultMessage),
+    });
 };
 
 // (Đã thêm)
@@ -18,11 +23,17 @@ const getParam = (param: string | string[] | undefined): string => {
 // body: { session_id, user_id, message }
 const sendMessage = async (req: Request, res: Response) => {
     try {
-        const { session_id = 'default_session', user_id, message } = req.body;
-        if (!message) {
+        let { session_id, user_id, message } = req.body;
+        if (!message || typeof message !== 'string' || !message.trim()) {
             return res.status(400).json({ status: 'error', message: 'Nội dung tin nhắn không được để trống' });
         }
-        const result = await chatbotService.sendMessage({ session_id, user_id, message });
+
+        // Chặn default_session, tự động tạo UUID v4 chuẩn nếu client chưa cung cấp hoặc gửi default_session
+        if (!session_id || session_id === 'default_session') {
+            session_id = crypto.randomUUID();
+        }
+
+        const result = await chatbotService.sendMessage({ session_id, user_id, message: message.trim() });
         return res.status(200).json({ status: 'success', data: result });
     } catch (error) {
         return handleControllerError(res, error, 'Lỗi khi xử lý tin nhắn chatbot');
@@ -42,6 +53,12 @@ const getFaqs = async (req: Request, res: Response) => {
 const getChatHistory = async (req: Request, res: Response) => {
     try {
         const sessionId = getParam(req.params.sessionId);
+        if (!sessionId || sessionId === 'default_session') {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Session ID không hợp lệ hoặc không được phép tra cứu',
+            });
+        }
         const history = await chatbotService.getChatHistory(sessionId);
         return res.status(200).json({ status: 'success', history });
     } catch (error) {

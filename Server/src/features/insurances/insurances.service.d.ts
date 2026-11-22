@@ -21,7 +21,7 @@ declare const calculateFee: (input: CalculateInsuranceInput) => Promise<{
     days: number;
     total_fee: number;
 }>;
-declare const attachInsuranceToBooking: (bookingId: string, packageId: string, guests?: number) => Promise<{
+declare const attachInsuranceToBooking: (bookingId: string, packageId: string, guests?: number, userId?: string, role?: string) => Promise<{
     booking_id: string;
     insurance: InsurancePackage;
     insurance_fee: number;

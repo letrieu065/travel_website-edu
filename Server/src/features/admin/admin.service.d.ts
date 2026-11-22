@@ -8,6 +8,7 @@ export interface PaginatedResult<T> {
     total: number;
     page: number;
     limit: number;
+    [key: string]: any;
 }
 export interface UserData {
     email: string;

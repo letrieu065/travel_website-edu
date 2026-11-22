@@ -24,13 +24,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const user_service_1 = __importDefault(require("./user.service"));
+const env_1 = __importDefault(require("../../config/env"));
 /**
  * Xử lý lỗi chuẩn cho Users Controller
  * // (Đã thêm)
  */
 const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
-    return res.status(500).json({ status: 'error', message: error.message || defaultMessage });
+    const msg = (error === null || error === void 0 ? void 0 : error.message) || defaultMessage;
+    if (msg.includes('Mật khẩu hiện tại không chính xác') || msg.includes('không chính xác') || msg.includes('không hợp lệ')) {
+        return res.status(400).json({ status: 'error', message: msg });
+    }
+    if (msg.includes('Không tìm thấy') || (error === null || error === void 0 ? void 0 : error.code) === 'P2025' || (error === null || error === void 0 ? void 0 : error.code) === 'P2007') {
+        return res.status(404).json({ status: 'error', message: msg });
+    }
+    return res.status(500).json({ status: 'error', message: msg });
 };
 /**
  * Trích xuất an toàn giá trị string từ route params
@@ -46,25 +54,24 @@ const getParam = (param) => {
  * // (Đã thêm)
  */
 const extractUserId = (req) => {
-    var _a;
     const reqUser = req.user;
-    if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.userId)
-        return reqUser.userId;
     if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.id)
         return reqUser.id;
+    if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.userId)
+        return reqUser.userId;
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
             const token = authHeader.split(' ')[1];
-            const secret = process.env.JWT_SECRET || 'default_secret_key';
+            const secret = env_1.default.JWT_SECRET;
             const decoded = jsonwebtoken_1.default.verify(token, secret);
-            return decoded.userId || decoded.id || '';
+            return decoded.id || decoded.userId || '';
         }
-        catch (_b) {
+        catch (_a) {
             return '';
         }
     }
-    return req.query.user_id || ((_a = req.body) === null || _a === void 0 ? void 0 : _a.user_id) || '';
+    return '';
 };
 /* ============================== CONTROLLERS ============================== */
 /**

@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.optionalAuthenticate = exports.requireAdmin = exports.authenticate = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = __importDefault(require("../config/prisma"));
+const env_1 = __importDefault(require("../config/env"));
 // (Đã thêm)
 const authenticate = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -26,7 +27,7 @@ const authenticate = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
             });
         }
         const token = authHeader.split(' ')[1];
-        const secret = process.env.JWT_SECRET || 'default_secret_key';
+        const secret = env_1.default.JWT_SECRET;
         const decoded = jsonwebtoken_1.default.verify(token, secret);
         const userId = decoded.userId || decoded.id;
         if (!userId) {
@@ -92,7 +93,7 @@ const optionalAuthenticate = (req, res, next) => __awaiter(void 0, void 0, void 
             return next();
         }
         const token = authHeader.split(' ')[1];
-        const secret = process.env.JWT_SECRET || 'default_secret_key';
+        const secret = env_1.default.JWT_SECRET;
         const decoded = jsonwebtoken_1.default.verify(token, secret);
         const userId = decoded.userId || decoded.id;
         if (userId) {

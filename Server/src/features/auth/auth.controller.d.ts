@@ -1,41 +1,36 @@
 /**
  * ============================================================================
- * MODULE AUTH - CONTROLLER (Xử lý Đăng nhập, Đăng ký, OAuth & Quên mật khẩu)
+ * MODULE AUTH - CONTROLLER (Xử lý Xác thực & Phân quyền Người Dùng)
  * ============================================================================
  * Chịu trách nhiệm:
- * - Xác thực thông tin đăng nhập truyền thống (Email + Password qua bcrypt).
- * - Tích hợp xác thực Single Sign-On (SSO) Google OAuth 2.0.
- * - Quy trình Đăng ký tài khoản có xác thực OTP qua Gmail (2 bước bảo mật).
- * - Quy trình Quên mật khẩu: Sinh mã OTP 6 số, mã hóa JWT tạm (5 phút), gửi mail qua Nodemailer.
- * - Cấp phát JSON Web Token (JWT) có hạn 7 ngày để truy cập các tài nguyên bảo vệ.
+ * - Đăng nhập tài khoản truyền thống (Email/Password) và Google OAuth.
+ * - Đăng ký tài khoản mới tích hợp gửi mã OTP xác minh qua email.
+ * - Quên mật khẩu và đặt lại mật khẩu an toàn với xác thực OTP 2 bước.
+ * - Quản lý phiên làm việc tạm thời an toàn trên Server (không lộ secrets / hash).
  * ============================================================================
  */
 import 'dotenv/config';
 import { Request, Response } from 'express';
 /**
- * Sinh chuỗi mã OTP ngẫu nhiên gồm các chữ số
- * // (Đã thêm)
+ * Sinh chuỗi mã OTP ngẫu nhiên gồm các chữ số an toàn mật mã học (CSPRNG)
  */
 export declare const generateOTP: (length?: number) => string;
 /**
  * Đăng nhập tài khoản bằng email và mật khẩu
  * - Endpoint: POST /api/v1/auth/login
  * - Body: { email, password }
- * // (Đã thêm)
  */
 declare const login: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 /**
  * Gửi mã OTP xác thực đăng ký tài khoản qua Gmail
  * - Endpoint: POST /api/v1/auth/send-register-otp
  * - Body: { name, email, password }
- * // (Đã thêm)
  */
 declare const sendRegisterOTP: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 /**
  * Xác thực mã OTP và hoàn tất tạo tài khoản người dùng mới
  * - Endpoint: POST /api/v1/auth/verify-register-otp
  * - Body: { email, otp, tempToken }
- * // (Đã thêm)
  */
 declare const verifyRegisterOTP: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 /**
@@ -43,35 +38,31 @@ declare const verifyRegisterOTP: (req: Request, res: Response) => Promise<Respon
  * - Endpoint: POST /api/v1/auth/register
  * - Body bước 1: { name, email, password } -> Gửi OTP & trả về tempToken
  * - Body bước 2: { email, otp, tempToken } -> Xác thực OTP & tạo tài khoản
- * // (Đã thêm)
  */
 declare const register: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 /**
  * Đăng nhập nhanh qua Google OAuth Token
  * - Endpoint: POST /api/v1/auth/google
  * - Body: { token: google_access_token }
- * // (Đã thêm)
  */
 declare const googleLogin: (req: Request, res: Response) => Promise<void>;
+declare const facebookLogin: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 /**
  * Yêu cầu đặt lại mật khẩu: Sinh mã OTP và gửi qua email
  * - Endpoint: POST /api/v1/auth/forgot-password
  * - Body: { email }
- * // (Đã thêm)
  */
 declare const forgetPass: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 /**
  * Xác thực mã OTP người dùng nhập vào khi quên mật khẩu
  * - Endpoint: POST /api/v1/auth/verify-otp
  * - Body: { email, otp, tempToken }
- * // (Đã thêm)
  */
 declare const verifyOTP: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 /**
  * Cập nhật mật khẩu mới sau khi xác thực OTP thành công
  * - Endpoint: POST /api/v1/auth/reset-password
- * - Body: { email, tempToken, newPassword }
- * // (Đã thêm)
+ * - Body: { email, tempToken, resetToken, newPassword }
  */
 declare const resetPass: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 declare const _default: {
@@ -80,6 +71,7 @@ declare const _default: {
     sendRegisterOTP: typeof sendRegisterOTP;
     verifyRegisterOTP: typeof verifyRegisterOTP;
     googleLogin: typeof googleLogin;
+    facebookLogin: typeof facebookLogin;
     forgetPass: typeof forgetPass;
     verifyOTP: typeof verifyOTP;
     resetPass: typeof resetPass;

@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const reviews_service_1 = __importDefault(require("./reviews.service"));
+const env_1 = __importDefault(require("../../config/env"));
 // (Đã thêm)
 const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xảy ra') => {
     console.error(defaultMessage, error);
@@ -27,25 +28,24 @@ const getParam = (param) => {
 };
 // (Đã thêm)
 const extractUserId = (req) => {
-    var _a;
     const reqUser = req.user;
-    if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.userId)
-        return reqUser.userId;
     if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.id)
         return reqUser.id;
+    if (reqUser === null || reqUser === void 0 ? void 0 : reqUser.userId)
+        return reqUser.userId;
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
             const token = authHeader.split(' ')[1];
-            const secret = process.env.JWT_SECRET || 'default_secret_key';
+            const secret = env_1.default.JWT_SECRET;
             const decoded = jsonwebtoken_1.default.verify(token, secret);
-            return decoded.userId || decoded.id || '';
+            return decoded.id || decoded.userId || '';
         }
-        catch (_b) {
+        catch (_a) {
             return '';
         }
     }
-    return req.query.user_id || ((_a = req.body) === null || _a === void 0 ? void 0 : _a.user_id) || '';
+    return '';
 };
 /* ============================== CONTROLLERS ============================== */
 // query: limit, item_type
@@ -91,11 +91,15 @@ const createReview = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         if (!item_id || !['tour', 'hotel', 'flight'].includes(item_type) || rating === undefined) {
             return res.status(400).json({ status: 'error', message: 'Thiếu thông tin hoặc item_type/rating không hợp lệ' });
         }
+        const numRating = Number(rating);
+        if (!Number.isInteger(numRating) || numRating < 1 || numRating > 5) {
+            return res.status(400).json({ status: 'error', message: 'Điểm đánh giá phải từ 1 đến 5' });
+        }
         const review = yield reviews_service_1.default.createReview({
             user_id: userId,
             item_id,
             item_type,
-            rating: Number(rating),
+            rating: numRating,
             comment,
             media_urls,
         });
