@@ -150,23 +150,29 @@ export default async function HomePage() {
     return (
         <div className="w-full pb-0 bg-white">
             {/* 1. Hero Section (Lonely Planet Immersive Hook) */}
-            <section
-                className="relative min-h-[85vh] flex flex-col justify-between overflow-hidden bg-black text-white"
-                style={{
-                    backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.85) 100%), url("${heroImage}")`,
-                    backgroundPosition: 'center',
-                    backgroundSize: 'cover',
-                }}
-            >
-                <div className="max-w-7xl mx-auto px-6 pt-24 md:pt-32 pb-16 w-full flex-1 flex flex-col justify-center">
+            <section className="relative min-h-[85vh] flex flex-col justify-between overflow-hidden text-white">
+                <Image
+                    src="/images/headers/natura-travel.jpg"
+                    alt="Natura Travel - Khám phá thế giới theo cách của bạn"
+                    fill
+                    priority
+                    quality={95}
+                    sizes="100vw"
+                    className="object-cover object-[center_35%] opacity-100"
+                />
+                {/* Lớp phủ gradient mềm mại, giữ trọn độ sáng, màu sắc tự nhiên của ảnh và làm nổi bật tiêu đề */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/25 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+
+                <div className="max-w-7xl mx-auto px-6 pt-24 md:pt-32 pb-16 w-full flex-1 flex flex-col justify-center relative z-10">
                     <div className="max-w-3xl">
-                        <span className="inline-block bg-[#FACC15] text-black px-3.5 py-1 text-xs font-black uppercase tracking-widest mb-4">
+                        <span className="inline-block bg-[#FACC15] text-black px-3.5 py-1 text-xs font-black uppercase tracking-widest mb-4 shadow-sm">
                             For Explorers Everywhere
                         </span>
-                        <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight leading-[0.95] text-white">
+                        <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight leading-[0.95] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                             Khám Phá Thế Giới Theo Cách Của Bạn
                         </h1>
-                        <p className="mt-5 text-base sm:text-lg text-gray-200 max-w-2xl leading-relaxed font-medium line-clamp-2 sm:line-clamp-3">
+                        <p className="mt-5 text-base sm:text-lg text-gray-100 max-w-2xl leading-relaxed font-medium line-clamp-2 sm:line-clamp-3 drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
                             {formatTourSummary(heroTour?.description, 160) ||
                                 'Natura Travel mang đến những hành trình nguyên bản, tour du lịch trọn gói và cẩm nang khám phá đích thực từ các chuyên gia bản địa.'}
                         </p>
@@ -198,13 +204,13 @@ export default async function HomePage() {
                 </div>
 
                 {/* Tabbed Search Box Widget (Overlaid on Bottom Hero) */}
-                <div className="max-w-7xl mx-auto px-6 w-full relative py-6 md:py-0 md:-mb-10 z-20">
+                <div className="max-w-7xl mx-auto px-6 w-full relative py-6 md:py-0 md:-mb-14 z-20">
                     <HeroSearchWidget />
                 </div>
             </section>
 
             {/* Spacer for Search Widget */}
-            <div className="hidden md:block md:h-20" />
+            <div className="hidden md:block md:h-24" />
 
             {/* 2. Curated Destinations Grid ("Best in Travel" - Lonely Planet Style) */}
             <section className="max-w-7xl mx-auto px-6 pt-6 md:pt-24 pb-16">
@@ -390,7 +396,7 @@ export default async function HomePage() {
                             </h2>
                         </div>
                         <Link
-                            href="/about-us"
+                            href="/handbook"
                             className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-black hover:underline"
                         >
                             Đọc tất cả bài viết <ArrowRight className="w-4 h-4" />
@@ -401,23 +407,25 @@ export default async function HomePage() {
                         {EDITORIAL_STORIES.map((story) => (
                             <article key={story.id} className="bg-white border border-gray-200 overflow-hidden flex flex-col justify-between hover:shadow-lg transition-shadow">
                                 <div>
-                                    <div className="relative aspect-[16/10] overflow-hidden">
+                                    <Link href="/handbook" className="block relative aspect-[16/10] overflow-hidden group">
                                         <Image
                                             src={story.image}
                                             alt={story.title}
                                             fill
                                             sizes="(max-width: 768px) 100vw, 33vw"
-                                            className="object-cover transition-transform duration-500 hover:scale-105"
+                                            className="object-cover transition-transform duration-500 group-hover:scale-105"
                                         />
-                                    </div>
+                                    </Link>
                                     <div className="p-6">
                                         <div className="flex items-center justify-between text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
                                             <span className="text-black font-black">{story.category}</span>
                                             <span>{story.readTime}</span>
                                         </div>
-                                        <h3 className="text-lg font-black text-gray-900 leading-snug hover:underline mb-3">
-                                            {story.title}
-                                        </h3>
+                                        <Link href="/handbook" className="block">
+                                            <h3 className="text-lg font-black text-gray-900 leading-snug hover:underline mb-3">
+                                                {story.title}
+                                            </h3>
+                                        </Link>
                                         <p className="text-xs text-gray-600 leading-relaxed">
                                             {story.excerpt}
                                         </p>
@@ -425,7 +433,7 @@ export default async function HomePage() {
                                 </div>
                                 <div className="p-6 pt-0">
                                     <Link
-                                        href="/about-us"
+                                        href="/handbook"
                                         className="text-xs font-black uppercase tracking-wider text-black inline-flex items-center gap-1.5 hover:underline"
                                     >
                                         Đọc tiếp <ArrowRight className="w-3.5 h-3.5" />

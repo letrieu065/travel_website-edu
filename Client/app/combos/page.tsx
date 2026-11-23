@@ -186,29 +186,42 @@ export default function CombosPage() {
     return (
         <div className="min-h-screen bg-[#FDFBF7] text-gray-900 pb-20">
             {/* Hero Section */}
-            <section className="relative bg-[#0f141e] text-white py-16 px-6 lg:px-12 border-b border-gray-800">
-                <div className="max-w-7xl mx-auto">
+            <section className="relative text-white pt-16 pb-32 md:pt-20 md:pb-40 px-6 lg:px-12 overflow-hidden">
+                <Image
+                    src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=1920&auto=format&fit=crop"
+                    alt="Combo du lịch nghỉ dưỡng trọn gói"
+                    fill
+                    priority
+                    className="object-cover object-[center_65%] opacity-100"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+
+                <div className="max-w-7xl mx-auto relative z-10">
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FACC15] text-black text-xs font-black uppercase tracking-widest rounded-sm">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FACC15] text-black text-xs font-black uppercase tracking-widest rounded-sm shadow-sm">
                             <Sparkles className="w-3.5 h-3.5" /> Gói Du Lịch Tiết Kiệm
                         </span>
-                        <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">
+                        <span className="text-gray-100 text-xs font-bold uppercase tracking-wider drop-shadow-sm">
                             Bundle & Save up to 15%
                         </span>
                     </div>
 
-                    <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white max-w-3xl font-serif">
+                    <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white max-w-3xl font-serif drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                         Combo Trọn Gói: Tour + Khách Sạn + Vé Máy Bay
                     </h1>
-                    <p className="mt-4 text-sm md:text-base text-gray-300 max-w-2xl font-light leading-relaxed">
+                    <p className="mt-4 text-sm md:text-base text-gray-100 max-w-2xl font-normal leading-relaxed drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
                         Khám phá các gói hành trình được thiết kế đồng bộ bởi chuyên gia Natura Travel. Tiết kiệm thời gian lập kế hoạch và tối ưu chi phí hơn bao giờ hết.
                     </p>
+                </div>
+            </section>
 
-                    {/* Filter Card */}
-                    <form
-                        onSubmit={handleFilterSubmit}
-                        className="mt-8 bg-white text-gray-900 p-4 md:p-6 rounded-none shadow-2xl border-t-4 border-[#FACC15] grid grid-cols-1 md:grid-cols-4 gap-4"
-                    >
+            {/* Filter Card - ĐÈ LÊN ẢNH HERO */}
+            <div className="max-w-7xl mx-auto px-6 lg:px-12 -mt-14 md:-mt-16 relative z-20">
+                <form
+                    onSubmit={handleFilterSubmit}
+                    className="bg-white text-gray-900 p-4 md:p-6 rounded-none shadow-2xl border-t-4 border-[#FACC15] grid grid-cols-1 md:grid-cols-4 gap-4"
+                >
                         <div>
                             <label className="block text-[11px] font-black uppercase tracking-wider text-gray-500 mb-1">
                                 Điểm Đến Mong Muốn
@@ -281,7 +294,6 @@ export default function CombosPage() {
                         </div>
                     </form>
                 </div>
-            </section>
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-6 lg:px-12 pt-12">

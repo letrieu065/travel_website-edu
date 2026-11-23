@@ -268,29 +268,40 @@ function HandbookContent() {
     return (
         <div className="min-h-screen bg-[#FDFBF7] text-gray-900 font-sans pb-24">
             {/* 1. HERO SECTION NHỎ GỌN, ĐỒNG BỘ */}
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 text-center">
-                    <span className="inline-block bg-[#FACC15] text-black text-[10px] sm:text-xs font-black px-2.5 py-0.5 uppercase tracking-widest mb-2">
+            <div className="relative text-white overflow-hidden py-14 sm:py-20 border-b border-gray-800">
+                <Image
+                    src="/images/headers/handbook-cover.jpg"
+                    alt="Cẩm nang du lịch và kinh nghiệm khám phá"
+                    fill
+                    priority
+                    quality={95}
+                    className="object-cover object-center opacity-100"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/35 to-black/60" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center relative z-10">
+                    <span className="inline-block bg-[#FACC15] text-black text-[10px] sm:text-xs font-black px-2.5 py-0.5 uppercase tracking-widest mb-2 shadow-sm">
                         Natura Travel Handbook
                     </span>
 
-                    <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-gray-900 mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white mb-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                         Cẩm Nang & Kinh Nghiệm Du Lịch
                     </h1>
-                    <p className="max-w-xl mx-auto text-xs sm:text-sm text-gray-500 font-normal">
+                    <p className="max-w-xl mx-auto text-xs sm:text-sm text-gray-100 font-medium drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
                         Kho tri thức tổng hợp về đóng gói hành lý, khám phá ẩm thực bản địa và những kỹ năng mẹo hay hữu ích cho mọi hành trình của bạn.
                     </p>
 
-                    {/* Ô TÌM KIẾM NHANH */}
-                    <div className="max-w-lg mx-auto mt-4 relative">
-                        <div className="relative flex items-center">
+                    {/* Ô TÌM KIẾM NHANH - ĐÈ LÊN ẢNH HERO */}
+                    <div className="max-w-lg mx-auto mt-5 relative z-20">
+                        <div className="relative flex items-center shadow-2xl">
                             <Search className="w-4 h-4 text-gray-400 absolute left-3.5 pointer-events-none" />
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Tìm kiếm cẩm nang, mẹo đóng đồ, món ăn ngon..."
-                                className="w-full pl-10 pr-9 py-2.5 bg-gray-50 border border-gray-300 rounded-none text-xs sm:text-sm font-medium focus:outline-hidden focus:border-black focus:bg-white transition-colors"
+                                className="w-full pl-10 pr-9 py-2.5 bg-white border border-gray-300 rounded-none text-xs sm:text-sm text-black font-medium focus:outline-hidden focus:border-[#FACC15] transition-colors"
                             />
                             {searchQuery && (
                                 <button

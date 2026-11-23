@@ -14,6 +14,7 @@
 
 import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { Search, MapPin, Filter, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import TourCard, { type Tour } from '@/components/common/TourCard';
 
@@ -345,25 +346,37 @@ function ToursContent() {
     return (
         <div className="w-full min-h-screen bg-gray-50 pb-20">
             {/* Hero Header */}
-            <section className="bg-black text-white py-14 px-6 border-b border-gray-800">
-                <div className="max-w-7xl mx-auto">
-                    <span className="text-xs font-black tracking-widest text-[#FACC15] uppercase">
+            <section className="relative text-white pt-16 pb-32 md:pt-20 md:pb-40 px-6 overflow-hidden">
+                <Image
+                    src="/images/headers/tours-flipped.jpg"
+                    alt="Tour du lịch khám phá biển đảo"
+                    fill
+                    priority
+                    quality={95}
+                    className="object-cover object-[right_64%] opacity-100"
+                    style={{ objectPosition: 'right 64%' }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/25 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+
+                <div className="max-w-7xl mx-auto relative z-10">
+                    <span className="text-xs font-black tracking-widest text-[#FACC15] uppercase drop-shadow-sm">
                         Khám phá thế giới cùng Natura Travel
                     </span>
-                    <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight mt-2">
+                    <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight mt-2 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                         Danh Sách Tour Du Lịch
                     </h1>
-                    <p className="mt-3 text-gray-400 text-sm md:text-base max-w-2xl">
+                    <p className="mt-3 text-gray-100 text-sm md:text-base max-w-2xl drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)] font-medium">
                         Trải nghiệm những hành trình tuyệt vời với dịch vụ trọn gói chuẩn 5 sao và mức giá ưu đãi nhất.
                     </p>
                 </div>
             </section>
 
-            {/* Filter & Search Bar */}
-            <div className="max-w-7xl mx-auto px-6 -mt-6">
+            {/* Filter & Search Bar - ĐÈ LÊN ẢNH HERO */}
+            <div className="max-w-7xl mx-auto px-6 -mt-14 md:-mt-16 relative z-20">
                 <form
                     onSubmit={handleFilterSubmit}
-                    className="bg-white p-6 border border-gray-200 shadow-xl rounded-none flex flex-col gap-4"
+                    className="bg-white p-6 border border-gray-200 shadow-2xl rounded-none flex flex-col gap-4"
                 >
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         {/* Search input */}

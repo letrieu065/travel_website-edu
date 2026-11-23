@@ -52,18 +52,20 @@ export default function AboutUsPage() {
                     alt="Vẻ đẹp Việt Nam - Natura Travel"
                     fill
                     priority
-                    className="object-cover opacity-35"
+                    className="object-cover opacity-85"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/80" />
+                {/* Lớp phủ chuyển sắc thông minh: Giữ sáng rõ phong cảnh non nước bên phải, tối vừa đủ phía bên trái để chữ nổi bật */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/15" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
 
                 <div className="max-w-7xl mx-auto w-full relative z-10">
                     <div className="inline-flex items-center gap-2 bg-[#FACC15] text-black px-3.5 py-1 text-xs font-black uppercase tracking-widest mb-6 shadow-sm">
                         <Compass className="w-4 h-4" /> Tôn Vinh Vẻ Đẹp Việt Nam · Natura Travel
                     </div>
-                    <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight text-white max-w-4xl leading-[1.05]">
+                    <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight text-white max-w-4xl leading-[1.05] drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                         Kết Nối Trái Tim Với Dải Đất Hình Chữ S
                     </h1>
-                    <p className="mt-6 text-gray-300 text-base sm:text-xl font-medium max-w-3xl leading-relaxed">
+                    <p className="mt-6 text-gray-200 text-base sm:text-xl font-medium max-w-3xl leading-relaxed drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
                         Chúng tôi không chỉ tổ chức các chuyến đi; chúng tôi kiến tạo những hành trình trải nghiệm độc bản, đưa bạn chạm vào tâm hồn, văn hóa và vẻ đẹp kỳ vĩ của thiên nhiên non sông Việt Nam.
                     </p>
                     <div className="mt-10 flex flex-wrap gap-4">
@@ -75,7 +77,7 @@ export default function AboutUsPage() {
                         </Link>
                         <Link
                             href="/tours"
-                            className="bg-white/10 hover:bg-white text-white hover:text-black font-black text-xs uppercase tracking-widest px-8 py-4 border border-white/20 transition-all flex items-center gap-2"
+                            className="bg-white/10 hover:bg-white text-white hover:text-black font-black text-xs uppercase tracking-widest px-8 py-4 border border-white/20 transition-all flex items-center gap-2 backdrop-blur-xs"
                         >
                             Tours Du Lịch 3 Miền
                         </Link>

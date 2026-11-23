@@ -354,21 +354,31 @@ function DestinationsContent() {
     return (
         <div className="w-full min-h-screen bg-[#FDFBF7] pb-24 text-gray-900">
             {/* 1. Hero Header */}
-            <section className="bg-black text-white pt-16 pb-20 px-6 border-b border-gray-800 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#FACC15_1px,transparent_1px)] [background-size:16px_16px]" />
+            <section className="relative text-white pt-16 pb-28 md:pt-20 md:pb-36 px-6 overflow-hidden">
+                <Image
+                    src="/images/headers/destinations-header.jpg"
+                    alt="Kỳ quan điểm đến du lịch non nước Việt Nam"
+                    fill
+                    priority
+                    quality={95}
+                    className="object-cover object-center opacity-100"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/25 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+
                 <div className="max-w-7xl mx-auto relative z-10">
-                    <div className="inline-flex items-center gap-2 bg-[#FACC15] text-black px-3.5 py-1 text-xs font-black uppercase tracking-widest mb-4">
+                    <div className="inline-flex items-center gap-2 bg-[#FACC15] text-black px-3.5 py-1 text-xs font-black uppercase tracking-widest mb-4 shadow-sm">
                         <Compass className="w-4 h-4" /> Natura Travel Guide · Điểm Đến Chọn Lọc
                     </div>
-                    <h1 className="text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-tight text-white max-w-4xl leading-tight">
+                    <h1 className="text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-tight text-white max-w-4xl leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                         Những Miền Đất Đáng Đến Nhất
                     </h1>
-                    <p className="mt-4 text-gray-300 text-sm sm:text-base max-w-2xl leading-relaxed font-medium">
+                    <p className="mt-4 text-gray-100 text-sm sm:text-base max-w-2xl leading-relaxed font-medium drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
                         Từ những kỳ quan thiên nhiên ngoạn mục tại Việt Nam đến những thành phố lịch sử và hòn đảo nhiệt đới quyến rũ trên toàn cầu.
                     </p>
 
-                    {/* Search Bar */}
-                    <div className="mt-8 max-w-2xl">
+                    {/* Search Bar - ĐÈ LÊN ẢNH HERO */}
+                    <div className="mt-8 max-w-2xl relative z-20">
                         <div className="relative flex items-center bg-white border border-gray-200 shadow-2xl">
                             <Search className="w-5 h-5 text-gray-400 ml-4 shrink-0" />
                             <input

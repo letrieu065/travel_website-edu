@@ -12,6 +12,15 @@ import Footer from './Footer';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3600';
 const HIDDEN_HEADER_FOOTER_ROUTES = ['/login', '/register', '/forgot-password', '/verify-otp', '/admin'];
 
+const NAV_ITEMS = [
+    { label: 'Destinations', href: '/destinations', mobileLabel: 'Điểm Đến' },
+    { label: 'Tours', href: '/tours', mobileLabel: 'Tours Du Lịch' },
+    { label: 'Hotels', href: '/hotels', mobileLabel: 'Khách Sạn & Resort' },
+    { label: 'Flights', href: '/flights', mobileLabel: 'Vé Máy Bay' },
+    { label: 'Handbook', href: '/handbook', mobileLabel: 'Cẩm Nang (Handbook)' },
+    { label: 'About Us', href: '/about-us', mobileLabel: 'Về Chúng Tôi' },
+];
+
 // (Đã thêm)
 const UserHeader: React.FC = () => {
     const router = useRouter();
@@ -42,6 +51,16 @@ const UserHeader: React.FC = () => {
     const handleLogout = useCallback(() => {
         clearSessionAndRedirect(true);
     }, [clearSessionAndRedirect]);
+
+    // Kiểm tra liên kết nào đang hoạt động dựa trên đường dẫn hiện tại
+    const isLinkActive = useCallback(
+        (href: string) => {
+            if (!pathname) return false;
+            if (href === '/') return pathname === '/';
+            return pathname === href || pathname.startsWith(`${href}/`);
+        },
+        [pathname]
+    );
 
     useEffect(() => {
         let isCancelled = false;
@@ -115,12 +134,28 @@ const UserHeader: React.FC = () => {
             </Link>
 
             <nav className="nav-links">
-                <Link href="/destinations" className="nav-link-item">Destinations</Link>
-                <Link href="/tours" className="nav-link-item">Tours</Link>
-                <Link href="/hotels" className="nav-link-item">Hotels</Link>
-                <Link href="/flights" className="nav-link-item">Flights</Link>
-                <Link href="/handbook" className="nav-link-item">Handbook</Link>
-                <Link href="/about-us" className="nav-link-item">About Us</Link>
+                {NAV_ITEMS.map((item) => {
+                    const active = isLinkActive(item.href);
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`relative py-1 text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer group ${
+                                active
+                                    ? 'text-black font-black'
+                                    : 'text-gray-500 hover:text-black font-bold'
+                            }`}
+                        >
+                            <span>{item.label}</span>
+                            {/* Hiệu ứng gạch dưới vàng #FACC15 nhận diện trang đang chọn */}
+                            {active ? (
+                                <span className="absolute -bottom-1.5 left-0 right-0 h-[3px] bg-[#FACC15] shadow-xs transition-all" />
+                            ) : (
+                                <span className="absolute -bottom-1.5 left-1/2 right-1/2 h-[2px] bg-transparent group-hover:left-0 group-hover:right-0 group-hover:bg-gray-300 transition-all duration-300" />
+                            )}
+                        </Link>
+                    );
+                })}
             </nav>
 
             <div className="auth-actions">
@@ -224,57 +259,38 @@ const UserHeader: React.FC = () => {
                                 </button>
                             </div>
 
-                            <nav className="flex flex-col gap-2 py-6">
+                            <nav className="flex flex-col gap-1.5 py-6">
                                 <Link
                                     href="/"
                                     onClick={() => setIsMobileNavOpen(false)}
-                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
+                                    className={`text-xs uppercase tracking-wider py-2.5 px-3 border-l-4 transition-all ${
+                                        pathname === '/'
+                                            ? 'border-[#FACC15] bg-yellow-50/50 font-black text-black'
+                                            : 'border-transparent text-gray-700 hover:text-black font-bold'
+                                    }`}
                                 >
                                     Trang chủ
                                 </Link>
-                                <Link
-                                    href="/destinations"
-                                    onClick={() => setIsMobileNavOpen(false)}
-                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
-                                >
-                                    Điểm Đến
-                                </Link>
-                                <Link
-                                    href="/tours"
-                                    onClick={() => setIsMobileNavOpen(false)}
-                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
-                                >
-                                    Tours Du Lịch
-                                </Link>
-                                <Link
-                                    href="/hotels"
-                                    onClick={() => setIsMobileNavOpen(false)}
-                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
-                                >
-                                    Khách Sạn & Resort
-                                </Link>
-                                <Link
-                                    href="/flights"
-                                    onClick={() => setIsMobileNavOpen(false)}
-                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
-                                >
-                                    Vé Máy Bay
-                                </Link>
-                                <Link
-                                    href="/handbook"
-                                    onClick={() => setIsMobileNavOpen(false)}
-                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50 flex items-center justify-between"
-                                >
-                                    <span>Cẩm Nang (Handbook)</span>
-                                    <span className="text-[9px] bg-[#FACC15] text-black px-1.5 py-0.5 font-black uppercase tracking-widest">New</span>
-                                </Link>
-                                <Link
-                                    href="/about-us"
-                                    onClick={() => setIsMobileNavOpen(false)}
-                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
-                                >
-                                    Về Chúng Tôi
-                                </Link>
+                                {NAV_ITEMS.map((item) => {
+                                    const active = isLinkActive(item.href);
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            onClick={() => setIsMobileNavOpen(false)}
+                                            className={`text-xs uppercase tracking-wider py-2.5 px-3 border-l-4 transition-all flex items-center justify-between ${
+                                                active
+                                                    ? 'border-[#FACC15] bg-yellow-50/50 font-black text-black'
+                                                    : 'border-transparent text-gray-700 hover:text-black font-bold'
+                                            }`}
+                                        >
+                                            <span>{item.mobileLabel || item.label}</span>
+                                            {active && (
+                                                <span className="w-2 h-2 rounded-full bg-[#FACC15]" />
+                                            )}
+                                        </Link>
+                                    );
+                                })}
                             </nav>
                         </div>
 
