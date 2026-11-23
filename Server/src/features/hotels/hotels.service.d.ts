@@ -22,6 +22,7 @@ declare const checkRoomAvailability: (id: string, roomsNeeded?: number, checkIn?
     hotel_id: string;
     available_rooms: number;
     is_available: boolean;
+    message: string | undefined;
     nights: number;
     price_per_night: number;
     estimated_total: number;

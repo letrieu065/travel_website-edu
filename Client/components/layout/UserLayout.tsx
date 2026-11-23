@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Search, ShoppingCart, User, LogOut, Info, ChevronDown, ShieldCheck, Menu, X } from 'lucide-react';
+import { Search, ShoppingCart, User, LogOut, Info, ChevronDown, ShieldCheck, Menu, X, Sparkles } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setProfile, clearProfile, type UserProfile } from '@/redux/userSlice';
 import type { RootState } from '@/redux/store';
@@ -169,6 +169,18 @@ const UserHeader: React.FC = () => {
                 </button>
                 <button
                     type="button"
+                    onClick={() => router.push('/ai-planner')}
+                    className="btn-icon-only group relative text-gray-800 hover:text-amber-600"
+                    aria-label="AI Planner"
+                    title="Trợ lý AI Lập Lịch Trình"
+                >
+                    <Sparkles className="w-4 h-4 text-amber-500 fill-amber-300 group-hover:rotate-12 transition-transform" />
+                    <span className="hidden sm:inline text-xs font-black uppercase tracking-wider text-black group-hover:text-amber-600 transition-colors">
+                        AI Planner
+                    </span>
+                </button>
+                <button
+                    type="button"
                     onClick={() => router.push(activeUser ? '/detail' : '/login')}
                     className="btn-icon-only"
                     aria-label="Booking cart"
@@ -291,6 +303,20 @@ const UserHeader: React.FC = () => {
                                         </Link>
                                     );
                                 })}
+                                <Link
+                                    href="/ai-planner"
+                                    onClick={() => setIsMobileNavOpen(false)}
+                                    className={`text-xs uppercase tracking-wider py-2.5 px-3 border-l-4 transition-all flex items-center justify-between ${
+                                        pathname === '/ai-planner'
+                                            ? 'border-[#FACC15] bg-yellow-50/50 font-black text-black'
+                                            : 'border-transparent text-amber-700 hover:text-black font-extrabold'
+                                    }`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-amber-500 fill-amber-300" />
+                                        <span>✨ AI Planner</span>
+                                    </span>
+                                </Link>
                             </nav>
                         </div>
 

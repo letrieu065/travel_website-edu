@@ -159,15 +159,29 @@ const checkRoomAvailability = (id_1, ...args_1) => __awaiter(void 0, [id_1, ...a
     if (!hotel)
         return null;
     let nights = 1;
+    const pricePerNight = hotel.discount_price ? Number(hotel.discount_price) : Number(hotel.price_per_night);
     if (checkIn && checkOut) {
-        const diffMs = new Date(checkOut).getTime() - new Date(checkIn).getTime();
+        const checkInDate = new Date(checkIn);
+        const checkOutDate = new Date(checkOut);
+        if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime()) || checkOutDate.getTime() <= checkInDate.getTime()) {
+            return {
+                hotel_id: hotel.id,
+                available_rooms: hotel.available_rooms,
+                is_available: false,
+                message: 'Ngày trả phòng (check-out) phải sau ngày nhận phòng (check-in)',
+                nights: 0,
+                price_per_night: pricePerNight,
+                estimated_total: 0,
+            };
+        }
+        const diffMs = checkOutDate.getTime() - checkInDate.getTime();
         nights = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
     }
-    const pricePerNight = hotel.discount_price ? Number(hotel.discount_price) : Number(hotel.price_per_night);
     return {
         hotel_id: hotel.id,
         available_rooms: hotel.available_rooms,
         is_available: hotel.available_rooms >= roomsNeeded,
+        message: hotel.available_rooms >= roomsNeeded ? undefined : 'Khách sạn không đủ phòng trống theo yêu cầu',
         nights,
         price_per_night: pricePerNight,
         estimated_total: pricePerNight * roomsNeeded * nights,

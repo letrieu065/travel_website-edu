@@ -22,6 +22,7 @@ import {
     Leaf,
     Clock,
     Building,
+    Sparkles,
 } from 'lucide-react';
 import TourCard, { type Tour, formatTourSummary } from '@/components/common/TourCard';
 import HeroSearchWidget from './HeroSearchWidget';
@@ -166,9 +167,6 @@ export default async function HomePage() {
 
                 <div className="max-w-7xl mx-auto px-6 pt-24 md:pt-32 pb-16 w-full flex-1 flex flex-col justify-center relative z-10">
                     <div className="max-w-3xl">
-                        <span className="inline-block bg-[#FACC15] text-black px-3.5 py-1 text-xs font-black uppercase tracking-widest mb-4 shadow-sm">
-                            For Explorers Everywhere
-                        </span>
                         <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight leading-[0.95] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                             Khám Phá Thế Giới Theo Cách Của Bạn
                         </h1>
@@ -441,6 +439,59 @@ export default async function HomePage() {
                                 </div>
                             </article>
                         ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* AI Travel Planner Promotion Banner */}
+            <section className="max-w-7xl mx-auto px-6 py-4 sm:py-6">
+                <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-xl border border-teal-800/30 flex items-center">
+                    {/* Background: Tropical lush resort & turquoise water */}
+                    <Image
+                        src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=2000&q=80"
+                        alt="Khám phá điểm đến cùng AI Planner"
+                        fill
+                        sizes="100vw"
+                        className="object-cover object-center scale-105 hover:scale-100 transition-transform duration-1000"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-blue-950/75" />
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(250,204,21,0.18),transparent_60%)]" />
+
+                    <div className="relative z-10 w-full py-7 px-6 sm:py-8 sm:px-10 md:py-9 md:px-12 flex flex-col md:flex-row items-center justify-between gap-6 text-white">
+                        <div className="max-w-2xl">
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-[#FACC15] text-[10px] sm:text-[11px] font-black uppercase tracking-widest mb-2.5 shadow-sm">
+                                <Sparkles className="w-3.5 h-3.5 text-[#FACC15]" />
+                                <span>Trợ Lý Độc Quyền Natura Travel</span>
+                            </div>
+
+                            <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tight text-white mb-2 leading-tight drop-shadow-md">
+                                Chưa Biết Nên Đi Đâu? Để AI Gợi Ý Lịch Trình Hoàn Hảo!
+                            </h2>
+
+                            <p className="text-xs sm:text-sm text-teal-100/90 font-medium leading-relaxed mb-4 max-w-xl">
+                                Khám phá trọn vẹn vẻ đẹp dải đất hình chữ S từ những bãi biển xanh ngọc đến đại ngàn hùng vĩ. Chỉ cần chọn sở thích và ngân sách, AI sẽ tức thì tổng hợp các phương án tour, khách sạn và chuyến bay tối ưu nhất!
+                            </p>
+
+                            <div className="flex flex-wrap gap-2 text-[11px] font-bold text-white">
+                                <span className="px-2.5 py-0.5 bg-white/10 backdrop-blur-md rounded-md border border-white/20">
+                                    🏖️ Biển đảo nhiệt đới
+                                </span>
+                                <span className="px-2.5 py-0.5 bg-white/10 backdrop-blur-md rounded-lg border border-white/20">
+                                    🌲 Núi rừng hoang sơ
+                                </span>
+                                <span className="px-2.5 py-0.5 bg-white/10 backdrop-blur-md rounded-lg border border-white/20">
+                                    🏛️ Di sản văn hóa
+                                </span>
+                            </div>
+                        </div>
+
+                        <Link
+                            href="/ai-planner"
+                            className="bg-[#FACC15] hover:bg-yellow-300 text-black font-black text-xs sm:text-sm uppercase tracking-wider px-6 sm:px-8 py-3.5 rounded-xl transition-all duration-300 shrink-0 inline-flex items-center gap-2.5 shadow-[0_8px_25px_rgba(250,204,21,0.35)] hover:shadow-[0_12px_30px_rgba(250,204,21,0.55)] hover:-translate-y-0.5 cursor-pointer"
+                        >
+                            <span>Khám Phá AI Planner</span>
+                            <ArrowRight className="w-4 h-4" />
+                        </Link>
                     </div>
                 </div>
             </section>

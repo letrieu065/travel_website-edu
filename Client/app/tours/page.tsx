@@ -360,10 +360,7 @@ function ToursContent() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
 
                 <div className="max-w-7xl mx-auto relative z-10">
-                    <span className="text-xs font-black tracking-widest text-[#FACC15] uppercase drop-shadow-sm">
-                        Khám phá thế giới cùng Natura Travel
-                    </span>
-                    <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight mt-2 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
+                    <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                         Danh Sách Tour Du Lịch
                     </h1>
                     <p className="mt-3 text-gray-100 text-sm md:text-base max-w-2xl drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)] font-medium">

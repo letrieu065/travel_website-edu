@@ -282,9 +282,6 @@ function ComboDetailContent() {
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                                 <div className="absolute bottom-6 left-6 right-6 text-white">
-                                    <span className="bg-[#FACC15] text-black text-[10px] font-black uppercase tracking-widest px-2.5 py-1 mb-2 inline-block">
-                                        Combo Trọn Gói Đặc Biệt
-                                    </span>
                                     <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white font-serif">
                                         {comboData.tour.title}
                                     </h1>

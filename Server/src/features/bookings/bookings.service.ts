@@ -113,6 +113,14 @@ const createBooking = async (data: CreateBookingData) => {
                     throw new Error(`Không tìm thấy khách sạn ${item.item_id}`);
                 }
 
+                // Bắt buộc phải có ngày check-in và check-out cho khách sạn
+                if (!checkInDate || !checkOutDate) {
+                    throw new Error('Vui lòng chọn ngày nhận phòng (check-in) và ngày trả phòng (check-out)');
+                }
+                if (checkOutDate.getTime() <= checkInDate.getTime()) {
+                    throw new Error('Ngày trả phòng (check-out) phải sau ngày nhận phòng (check-in)');
+                }
+
                 // Cập nhật nguyên tử có điều kiện: Trừ số lượng phòng chỉ khi available_rooms >= quantity
                 const res = await tx.hotels.updateMany({
                     where: { id: hotel.id, available_rooms: { gte: quantity } },
@@ -123,14 +131,8 @@ const createBooking = async (data: CreateBookingData) => {
                     throw new Error(`Khách sạn ${hotel.name} không đủ phòng trống (chỉ còn ${hotel.available_rooms} phòng)`);
                 }
 
-                let nights = 1;
-                if (checkInDate && checkOutDate) {
-                    if (checkOutDate.getTime() <= checkInDate.getTime()) {
-                        throw new Error('Ngày trả phòng (check-out) phải sau ngày nhận phòng (check-in)');
-                    }
-                    const diffMs = checkOutDate.getTime() - checkInDate.getTime();
-                    nights = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-                }
+                const diffMs = checkOutDate.getTime() - checkInDate.getTime();
+                const nights = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 
                 unitPrice = Number(hotel.discount_price ?? hotel.price_per_night) * nights;
                 totalPrice += unitPrice * quantity;

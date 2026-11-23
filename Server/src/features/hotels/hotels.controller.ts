@@ -151,6 +151,17 @@ const checkRoomAvailability = async (req: Request, res: Response) => {
         const checkIn = req.query.check_in as string;
         const checkOut = req.query.check_out as string;
 
+        if (checkIn && checkOut) {
+            const checkInDate = new Date(checkIn);
+            const checkOutDate = new Date(checkOut);
+            if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime()) || checkOutDate.getTime() <= checkInDate.getTime()) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Ngày trả phòng (check-out) phải sau ngày nhận phòng (check-in)',
+                });
+            }
+        }
+
         const data = await hotelsService.checkRoomAvailability(id, rooms, checkIn, checkOut);
         if (!data) {
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy khách sạn' });

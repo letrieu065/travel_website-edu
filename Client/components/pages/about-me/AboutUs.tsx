@@ -16,7 +16,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-    Compass,
     ShieldCheck,
     Leaf,
     Sparkles,
@@ -59,9 +58,6 @@ export default function AboutUsPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
 
                 <div className="max-w-7xl mx-auto w-full relative z-10">
-                    <div className="inline-flex items-center gap-2 bg-[#FACC15] text-black px-3.5 py-1 text-xs font-black uppercase tracking-widest mb-6 shadow-sm">
-                        <Compass className="w-4 h-4" /> Tôn Vinh Vẻ Đẹp Việt Nam · Natura Travel
-                    </div>
                     <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight text-white max-w-4xl leading-[1.05] drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                         Kết Nối Trái Tim Với Dải Đất Hình Chữ S
                     </h1>

@@ -249,9 +249,6 @@ export default function RestaurantsPage() {
             {/* Hero Editorial Header */}
             <section className="relative bg-[#0f141e] text-white py-16 px-6 lg:px-12 border-b border-gray-800">
                 <div className="max-w-7xl mx-auto">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FACC15] text-black text-xs font-black uppercase tracking-widest rounded-sm mb-3">
-                        <Utensils className="w-3.5 h-3.5" /> Lonely Planet Food & Dining
-                    </span>
                     <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white font-serif max-w-3xl">
                         Khám Phá Hương Vị Ẩm Thực Bản Địa
                     </h1>

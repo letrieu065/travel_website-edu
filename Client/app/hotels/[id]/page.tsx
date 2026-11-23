@@ -61,6 +61,7 @@ interface AvailabilityResult {
     hotel_id: string;
     available_rooms: number;
     is_available: boolean;
+    message?: string;
     nights: number;
     price_per_night: number;
     estimated_total: number;
@@ -86,6 +87,11 @@ const formatDate = (isoString?: string | null): string => {
 };
 
 // (Đã thêm)
+const getTodayDate = (): string => {
+    return new Date().toISOString().split('T')[0];
+};
+
+// (Đã thêm)
 const getTomorrowDate = (): string => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -96,6 +102,13 @@ const getTomorrowDate = (): string => {
 const getDayAfterTomorrowDate = (): string => {
     const d = new Date();
     d.setDate(d.getDate() + 2);
+    return d.toISOString().split('T')[0];
+};
+
+// Trả về ngày hôm sau của dateStr (YYYY-MM-DD)
+const getNextDay = (dateStr: string): string => {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + 1);
     return d.toISOString().split('T')[0];
 };
 
@@ -169,8 +182,25 @@ function HotelDetailContent({
 
         let isCancelled = false;
 
-        // (Đã thêm)
         const executeCheckAvailability = async () => {
+            const checkInDate = new Date(checkIn);
+            const checkOutDate = new Date(checkOut);
+            if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime()) || checkOutDate.getTime() <= checkInDate.getTime()) {
+                if (!isCancelled) {
+                    setAvailability({
+                        hotel_id: hotelId,
+                        available_rooms: 0,
+                        is_available: false,
+                        message: 'Ngày trả phòng (check-out) phải sau ngày nhận phòng (check-in)',
+                        nights: 0,
+                        price_per_night: 0,
+                        estimated_total: 0,
+                    });
+                    setIsCheckingAvailability(false);
+                }
+                return;
+            }
+
             try {
                 const q = new URLSearchParams({
                     rooms: String(rooms),
@@ -182,6 +212,19 @@ function HotelDetailContent({
                     const result = await res.json();
                     if (!isCancelled && result.status === 'success' && result.data) {
                         setAvailability(result.data);
+                    }
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    if (!isCancelled) {
+                        setAvailability({
+                            hotel_id: hotelId,
+                            available_rooms: 0,
+                            is_available: false,
+                            message: errData.message || 'Không thể kiểm tra phòng trống cho ngày đã chọn',
+                            nights: 0,
+                            price_per_night: 0,
+                            estimated_total: 0,
+                        });
                     }
                 }
             } catch (err) {
@@ -204,6 +247,19 @@ function HotelDetailContent({
     const handleBookingSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (isSubmitting) return;
+
+        // Validate ngày trước khi submit
+        if (!checkIn || !checkOut) {
+            alert('Vui lòng chọn ngày nhận phòng và trả phòng.');
+            return;
+        }
+        const checkInDate = new Date(checkIn);
+        const checkOutDate = new Date(checkOut);
+        if (checkOutDate.getTime() <= checkInDate.getTime()) {
+            alert('Ngày trả phòng phải sau ngày nhận phòng. Vui lòng chọn lại.');
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             if (availability && !availability.is_available) {
@@ -464,9 +520,15 @@ function HotelDetailContent({
                                         <input
                                             type="date"
                                             value={checkIn}
+                                            min={getTodayDate()}
                                             onChange={(e) => {
+                                                const newCheckIn = e.target.value;
                                                 setIsCheckingAvailability(true);
-                                                setCheckIn(e.target.value);
+                                                setCheckIn(newCheckIn);
+                                                // Nếu check-out <= check-in mới, tự động đẩy check-out sang ngày hôm sau
+                                                if (newCheckIn && checkOut && checkOut <= newCheckIn) {
+                                                    setCheckOut(getNextDay(newCheckIn));
+                                                }
                                             }}
                                             className="w-full p-2 text-xs font-bold border border-gray-300 focus:outline-none focus:border-black bg-white"
                                         />
@@ -478,6 +540,7 @@ function HotelDetailContent({
                                         <input
                                             type="date"
                                             value={checkOut}
+                                            min={checkIn ? getNextDay(checkIn) : getTomorrowDate()}
                                             onChange={(e) => {
                                                 setIsCheckingAvailability(true);
                                                 setCheckOut(e.target.value);
@@ -543,17 +606,19 @@ function HotelDetailContent({
                                             <span>
                                                 {availability.is_available
                                                     ? `Còn ${availability.available_rooms} phòng khả dụng`
-                                                    : 'Không đủ phòng trống cho đợt lưu trú này'}
+                                                    : (availability.message || 'Không đủ phòng trống cho đợt lưu trú này')}
                                             </span>
                                         </div>
-                                        <p className="text-[11px] text-gray-600">
-                                            Thời gian lưu trú: {availability.nights} đêm
-                                        </p>
+                                        {availability.is_available && (
+                                            <p className="text-[11px] text-gray-600">
+                                                Thời gian lưu trú: {availability.nights} đêm
+                                            </p>
+                                        )}
                                     </div>
                                 )}
 
                                 {/* Price breakdown */}
-                                {availability && (
+                                {availability && availability.is_available && (
                                     <div className="border-t border-gray-200 pt-4 space-y-2 text-xs">
                                         <div className="flex justify-between text-gray-600 font-medium">
                                             <span>{formatCurrency(availability.price_per_night)} x {rooms} phòng x {availability.nights} đêm:</span>

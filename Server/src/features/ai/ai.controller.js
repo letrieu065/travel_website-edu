@@ -40,16 +40,17 @@ const handleControllerError = (res, error, defaultMessage = 'Đã có lỗi xả
  */
 const generateItinerary = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { budget, days, interests, destination, guests } = req.body;
-        if (!budget || !days) {
-            return res.status(400).json({ status: 'error', message: 'Vui lòng nhập ngân sách (budget) và số ngày (days)' });
+        const { budget, days, interests, destination, guests, departure_location, departureLocation } = req.body;
+        if (!budget) {
+            return res.status(400).json({ status: 'error', message: 'Vui lòng nhập ngân sách chuyến đi (budget)' });
         }
         const result = yield ai_service_1.default.generateItinerary({
             budget: Number(budget),
-            days: Number(days),
+            days: days ? Number(days) : 3,
             interests: Array.isArray(interests) ? interests : [],
             destination,
-            guests: guests ? Number(guests) : undefined,
+            departure_location: departure_location || departureLocation,
+            guests: guests ? Number(guests) : 2,
         });
         return res.status(200).json({ status: 'success', data: result });
     }

@@ -3,6 +3,7 @@ export interface GenerateItineraryInput {
     days: number;
     interests: string[];
     destination?: string;
+    departure_location?: string;
     guests?: number;
 }
 export interface CompareToursInput {
@@ -13,16 +14,30 @@ declare const generateItinerary: (input: GenerateItineraryInput) => Promise<{
     input: {
         budget: number;
         days: number;
+        guests: number;
         interests: string[];
         destination: string;
+        departure_location: string;
     };
     ai_narrative: string | null;
-    daily_plan: {
-        day: number;
-        title: string;
-        activities: string[];
-        estimated_cost: number;
-    }[];
+    recommended_flights: ({
+        planes: {
+            id: string;
+            airline: string;
+            plane_number: string;
+            total_seats: number;
+        };
+    } & {
+        id: string;
+        plane_id: string;
+        departure_time: Date;
+        arrival_time: Date;
+        ticket_price: import("@prisma/client-runtime-utils").Decimal;
+        available_seats: number;
+        departure_airport: string;
+        arrival_airport: string;
+        created_at: Date | null;
+    })[];
     recommended_tours: ({
         tour_departures: {
             id: string;
@@ -76,6 +91,7 @@ declare const generateItinerary: (input: GenerateItineraryInput) => Promise<{
         is_trending: boolean | null;
         created_at: Date | null;
     })[];
+    recommended_handbooks: any[];
 }>;
 declare const compareTours: (input: CompareToursInput) => Promise<{
     comparison_table: {

@@ -92,6 +92,60 @@ const calculateDuration = (startIso: string, endIso: string): string => {
     return `${hours} giờ ${minutes < 10 ? '0' : ''}${minutes} phút`;
 };
 
+const AIRPORT_CODE_TO_CITY_INFO: Record<string, { city: string; airport: string }> = {
+    'HAN': { city: 'Hà Nội', airport: 'Sân bay Nội Bài' },
+    'SGN': { city: 'TP. Hồ Chí Minh', airport: 'Sân bay Tân Sơn Nhất' },
+    'DAD': { city: 'Đà Nẵng', airport: 'Sân bay Đà Nẵng' },
+    'CXR': { city: 'Nha Trang', airport: 'Sân bay Cam Ranh' },
+    'PQC': { city: 'Phú Quốc', airport: 'Sân bay Phú Quốc' },
+    'HPH': { city: 'Hải Phòng', airport: 'Sân bay Cát Bi' },
+    'HUI': { city: 'Huế', airport: 'Sân bay Phú Bài' },
+    'DLI': { city: 'Đà Lạt', airport: 'Sân bay Liên Khương' },
+    'VCA': { city: 'Cần Thơ', airport: 'Sân bay Cần Thơ' },
+    'UIH': { city: 'Quy Nhơn', airport: 'Sân bay Phù Cát' },
+    'VII': { city: 'Vinh', airport: 'Sân bay Vinh' },
+    'BMV': { city: 'Buôn Ma Thuột', airport: 'Sân bay Buôn Ma Thuột' },
+    'VCL': { city: 'Chu Lai', airport: 'Sân bay Chu Lai' },
+    'PXU': { city: 'Pleiku', airport: 'Sân bay Pleiku' },
+    'VCS': { city: 'Côn Đảo', airport: 'Sân bay Côn Đảo' },
+    'VDH': { city: 'Đồng Hới', airport: 'Sân bay Đồng Hới' },
+    'VDO': { city: 'Vân Đồn', airport: 'Sân bay Vân Đồn' },
+    'THD': { city: 'Thanh Hóa', airport: 'Sân bay Thọ Xuân' },
+    'DIN': { city: 'Điện Biên', airport: 'Sân bay Điện Biên' },
+    'TBB': { city: 'Tuy Hòa', airport: 'Sân bay Tuy Hòa' },
+};
+
+const getCityFromAirportCode = (codeOrName?: string | null): string => {
+    if (!codeOrName) return '';
+    const upper = codeOrName.trim().toUpperCase();
+    if (AIRPORT_CODE_TO_CITY_INFO[upper]) {
+        return AIRPORT_CODE_TO_CITY_INFO[upper].city;
+    }
+    const match = codeOrName.match(/\(([A-Za-z]{3})\)/);
+    if (match && AIRPORT_CODE_TO_CITY_INFO[match[1].toUpperCase()]) {
+        return AIRPORT_CODE_TO_CITY_INFO[match[1].toUpperCase()].city;
+    }
+    return codeOrName;
+};
+
+const getAirportDetailInfo = (codeOrName?: string | null) => {
+    if (!codeOrName) return { city: '', airport: '', code: '' };
+    const upper = codeOrName.trim().toUpperCase();
+    if (AIRPORT_CODE_TO_CITY_INFO[upper]) {
+        return {
+            city: AIRPORT_CODE_TO_CITY_INFO[upper].city,
+            airport: AIRPORT_CODE_TO_CITY_INFO[upper].airport,
+            code: upper,
+        };
+    }
+    const match = codeOrName.match(/\(([A-Za-z]{3})\)/);
+    if (match && AIRPORT_CODE_TO_CITY_INFO[match[1].toUpperCase()]) {
+        const info = AIRPORT_CODE_TO_CITY_INFO[match[1].toUpperCase()];
+        return { city: info.city, airport: info.airport, code: match[1].toUpperCase() };
+    }
+    return { city: codeOrName, airport: codeOrName, code: '' };
+};
+
 function FlightDetailContent({
     params,
 }: {
@@ -164,7 +218,7 @@ function FlightDetailContent({
                 flight_id: flight?.id || flightId,
                 guests: String(passengerCount),
                 price: String(totalPrice),
-                title: `Chuyến bay ${flight?.departure_airport || ''} -> ${flight?.arrival_airport || ''}`,
+                title: `Chuyến bay ${getCityFromAirportCode(flight?.departure_airport)} -> ${getCityFromAirportCode(flight?.arrival_airport)}`,
             });
 
             setBookingSuccess(true);
@@ -213,6 +267,11 @@ function FlightDetailContent({
     const duration = calculateDuration(flight.departure_time, flight.arrival_time);
     const totalPrice = flight.ticket_price * passengerCount;
 
+    const depCity = getCityFromAirportCode(flight.departure_airport);
+    const arrCity = getCityFromAirportCode(flight.arrival_airport);
+    const depAirportInfo = getAirportDetailInfo(flight.departure_airport);
+    const arrAirportInfo = getAirportDetailInfo(flight.arrival_airport);
+
     return (
         <div className="w-full min-h-screen bg-gray-50 pb-24">
             {/* Breadcrumb Bar */}
@@ -222,7 +281,7 @@ function FlightDetailContent({
                     <span>/</span>
                     <Link href="/flights" className="hover:text-black">Chuyến bay</Link>
                     <span>/</span>
-                    <span className="text-black">{flight.flight_number}</span>
+                    <span className="text-black">{depCity} đến {arrCity} ({flight.flight_number})</span>
                 </div>
             </div>
 
@@ -239,7 +298,7 @@ function FlightDetailContent({
                             </span>
                         </div>
                         <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-gray-900">
-                            Chuyến bay {flight.departure_airport} đến {flight.arrival_airport}
+                            Chuyến bay {depCity} đến {arrCity}
                         </h1>
                     </div>
 
@@ -283,10 +342,18 @@ function FlightDetailContent({
                                         <span className="text-3xl font-black text-black block">
                                             {depTime.time}
                                         </span>
-                                        <p className="text-sm font-bold text-gray-800 uppercase mt-1">
-                                            {flight.departure_airport}
+                                        <p className="text-base font-black text-gray-900 uppercase mt-1">
+                                            {depAirportInfo.city}
+                                            {depAirportInfo.code && (
+                                                <span className="ml-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 border border-amber-200">
+                                                    {depAirportInfo.code}
+                                                </span>
+                                            )}
                                         </p>
-                                        <span className="text-xs text-gray-500 block mt-0.5">
+                                        <span className="text-xs text-gray-600 block font-semibold mt-0.5">
+                                            {depAirportInfo.airport}
+                                        </span>
+                                        <span className="text-xs text-gray-400 block mt-0.5">
                                             {depTime.date}
                                         </span>
                                     </div>
@@ -313,10 +380,18 @@ function FlightDetailContent({
                                         <span className="text-3xl font-black text-black block">
                                             {arrTime.time}
                                         </span>
-                                        <p className="text-sm font-bold text-gray-800 uppercase mt-1">
-                                            {flight.arrival_airport}
+                                        <p className="text-base font-black text-gray-900 uppercase mt-1">
+                                            {arrAirportInfo.city}
+                                            {arrAirportInfo.code && (
+                                                <span className="ml-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 border border-amber-200">
+                                                    {arrAirportInfo.code}
+                                                </span>
+                                            )}
                                         </p>
-                                        <span className="text-xs text-gray-500 block mt-0.5">
+                                        <span className="text-xs text-gray-600 block font-semibold mt-0.5">
+                                            {arrAirportInfo.airport}
+                                        </span>
+                                        <span className="text-xs text-gray-400 block mt-0.5">
                                             {arrTime.date}
                                         </span>
                                     </div>

@@ -359,9 +359,6 @@ export default function UserDetailPage() {
                             )}
                         </div>
                         <div>
-                            <span className="text-xs font-black uppercase tracking-widest text-[#FACC15] block mb-1">
-                                Tài Khoản Thành Viên
-                            </span>
                             <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white font-serif">
                                 {fullName || reduxUser?.email || 'Natura Traveler'}
                             </h1>

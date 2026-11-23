@@ -61,6 +61,9 @@ function CheckoutContent() {
     const guests = Math.max(1, Number(searchParams.get('guests')) || 1);
     const nights = Math.max(1, Number(searchParams.get('nights')) || 1);
     const rawPrice = Number(searchParams.get('price')) || 0;
+    // Ngày nhận/trả phòng chỉ dùng cho hotel
+    const checkInParam = searchParams.get('check_in') || '';
+    const checkOutParam = searchParams.get('check_out') || '';
 
     // Contact Form state with fallback to redux user (no effect needed)
     const defaultFullName = reduxUser?.fullName || reduxUser?.full_name || reduxUser?.name || '';
@@ -157,6 +160,8 @@ function CheckoutContent() {
                 item_type: 'tour' | 'hotel' | 'flight';
                 item_id: string;
                 quantity: number;
+                check_in?: string;
+                check_out?: string;
             }> = [];
 
             if (type === 'combo') {
@@ -164,18 +169,53 @@ function CheckoutContent() {
                     items.push({ item_type: 'tour', item_id: departureId || tourId, quantity: guests });
                 }
                 if (hotelId) {
-                    items.push({ item_type: 'hotel', item_id: hotelId, quantity: 1 });
+                    const comboHotelItem: typeof items[0] = { item_type: 'hotel', item_id: hotelId, quantity: 1 };
+                    let cIn = checkInParam;
+                    let cOut = checkOutParam;
+                    if (!cIn || !cOut || new Date(cOut).getTime() <= new Date(cIn).getTime()) {
+                        const now = new Date();
+                        now.setDate(now.getDate() + 1);
+                        cIn = now.toISOString().split('T')[0];
+                        const outDate = new Date(now);
+                        outDate.setDate(outDate.getDate() + nights);
+                        cOut = outDate.toISOString().split('T')[0];
+                    }
+                    comboHotelItem.check_in = cIn;
+                    comboHotelItem.check_out = cOut;
+                    items.push(comboHotelItem);
                 }
                 if (flightId) {
                     items.push({ item_type: 'flight', item_id: flightId, quantity: guests });
                 }
             } else if (type === 'hotel') {
-                items.push({ item_type: 'hotel', item_id: hotelId || departureId, quantity: guests });
+                // Validate ngày check-in/check-out trước khi gửi
+                if (!checkInParam || !checkOutParam) {
+                    throw new Error('Vui lòng chọn ngày nhận phòng và trả phòng');
+                }
+                const checkInDate = new Date(checkInParam);
+                const checkOutDate = new Date(checkOutParam);
+                if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+                    throw new Error('Ngày nhận phòng hoặc trả phòng không hợp lệ');
+                }
+                if (checkOutDate.getTime() <= checkInDate.getTime()) {
+                    throw new Error('Ngày trả phòng phải sau ngày nhận phòng');
+                }
+                items.push({
+                    item_type: 'hotel',
+                    item_id: hotelId || departureId,
+                    quantity: guests,
+                    check_in: checkInParam,
+                    check_out: checkOutParam,
+                });
             } else if (type === 'flight') {
                 items.push({ item_type: 'flight', item_id: flightId || departureId, quantity: guests });
             } else {
                 // Tour
-                items.push({ item_type: 'tour', item_id: departureId || tourId, quantity: guests });
+                const finalTourItemId = departureId || tourId;
+                if (!finalTourItemId) {
+                    throw new Error('Không tìm thấy thông tin tour hoặc lịch khởi hành');
+                }
+                items.push({ item_type: 'tour', item_id: finalTourItemId, quantity: guests });
             }
 
             if (items.length === 0) {

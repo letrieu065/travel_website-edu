@@ -117,9 +117,21 @@ const createBooking = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                     message: 'Số lượng đặt phải là số nguyên dương lớn hơn 0',
                 });
             }
-            if (item.item_type === 'hotel' && item.check_in && item.check_out) {
+            if (item.item_type === 'hotel') {
+                if (!item.check_in || !item.check_out) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'Vui lòng chọn ngày nhận phòng (check-in) và ngày trả phòng (check-out)',
+                    });
+                }
                 const checkInDate = new Date(item.check_in);
                 const checkOutDate = new Date(item.check_out);
+                if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'Ngày nhận phòng hoặc ngày trả phòng không hợp lệ',
+                    });
+                }
                 if (checkOutDate.getTime() <= checkInDate.getTime()) {
                     return res.status(400).json({
                         status: 'error',

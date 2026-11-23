@@ -31,7 +31,7 @@ const getHandbooks = async (req: Request, res: Response) => {
 const getHandbookById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const handbook = await handbookService.getHandbookById(id);
+        const handbook = await handbookService.getHandbookById(id as string);
 
         if (!handbook) {
             return res.status(404).json({

@@ -10,6 +10,8 @@ export interface FlightFilterParams {
     max_price?: number;
     sort?: 'price_asc' | 'price_desc' | 'departure_asc';
 }
+export declare const AIRPORT_FULL_NAMES: Record<string, string>;
+export declare const resolveAirportCodes: (query?: string) => string[];
 declare const getFlights: (params: FlightFilterParams) => Promise<{
     flights: {
         id: string;

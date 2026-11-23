@@ -78,10 +78,15 @@ const getTours = (params) => __awaiter(void 0, void 0, void 0, function* () {
         ];
     }
     if (params.tour_type) {
-        where.tour_type = params.tour_type;
+        where.tour_type = { contains: params.tour_type, mode: 'insensitive' };
     }
     if (params.destination) {
-        where.destination = { contains: params.destination, mode: 'insensitive' };
+        where.OR = [
+            ...(where.OR || []),
+            { destination: { contains: params.destination, mode: 'insensitive' } },
+            { destinations: { contains: params.destination, mode: 'insensitive' } },
+            { title: { contains: params.destination, mode: 'insensitive' } },
+        ];
     }
     if (params.departure_location) {
         where.departure_location = { contains: params.departure_location, mode: 'insensitive' };

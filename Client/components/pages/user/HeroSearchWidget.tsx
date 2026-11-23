@@ -117,6 +117,15 @@ export default function HeroSearchWidget() {
                     <Plane className={`w-4 h-4 ${activeTab === 'flights' ? 'text-amber-500' : 'text-[#FACC15]'}`} />
                     <span>Vé Máy Bay</span>
                 </button>
+
+                <button
+                    type="button"
+                    onClick={() => router.push('/ai-planner')}
+                    className="flex items-center gap-2.5 px-5 py-3 rounded-t-xl sm:rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all duration-200 shadow-md bg-[#FACC15] hover:bg-yellow-300 text-black border border-yellow-300 cursor-pointer sm:ml-auto"
+                >
+                    <Sparkles className="w-4 h-4 text-black animate-bounce" />
+                    <span>✨ Trợ Lý AI Planner</span>
+                </button>
             </div>
 
             {/* 2. CARD TÌM KIẾM CHÍNH - PHONG CÁCH TRAVELOKA / AGODA / BOOKING */}

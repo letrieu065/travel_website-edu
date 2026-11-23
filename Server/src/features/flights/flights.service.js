@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.resolveAirportCodes = exports.AIRPORT_FULL_NAMES = void 0;
 const prisma_1 = __importDefault(require("../../config/prisma"));
 // (Đã thêm)
 const getPagination = (pageInput, limitInput) => {
@@ -20,8 +21,8 @@ const getPagination = (pageInput, limitInput) => {
     const skip = (page - 1) * limit;
     return { page, limit, skip };
 };
-
-const AIRPORT_FULL_NAMES = {
+/* ============================== AIRPORT RESOLVER HELPERS ============================== */
+exports.AIRPORT_FULL_NAMES = {
     'HAN': 'Hà Nội - Sân bay Nội Bài (HAN)',
     'SGN': 'TP. Hồ Chí Minh - Sân bay Tân Sơn Nhất (SGN)',
     'DAD': 'Đà Nẵng - Sân bay Đà Nẵng (DAD)',
@@ -40,7 +41,6 @@ const AIRPORT_FULL_NAMES = {
     'VDH': 'Quảng Bình - Sân bay Đồng Hới (VDH)',
     'VDO': 'Vân Đồn - Sân bay Vân Đồn (VDO)',
 };
-
 const AIRPORT_RULES = [
     { keywords: ['vinh ha long', 'ha long', 'quang ninh', 'van don'], codes: ['HPH', 'VDO'] },
     { keywords: ['da nang', 'danang', 'hoi an'], codes: ['DAD'] },
@@ -74,7 +74,6 @@ const AIRPORT_RULES = [
         }
     }
 ];
-
 const normalizeVN = (str) => {
     return str
         .toLowerCase()
@@ -84,30 +83,33 @@ const normalizeVN = (str) => {
         .replace(/Đ/g, 'd')
         .trim();
 };
-
 const resolveAirportCodes = (query) => {
-    if (!query || typeof query !== 'string') return [];
+    if (!query || typeof query !== 'string')
+        return [];
     const trimmed = query.trim();
-    if (!trimmed) return [];
-
+    if (!trimmed)
+        return [];
+    // 1. Check mã trong ngoặc đơn: "Đà Nẵng - Sân bay Đà Nẵng (DAD)" -> DAD
     const matchParen = trimmed.match(/\(([A-Za-z]{3})\)/);
-    if (matchParen) return [matchParen[1].toUpperCase()];
-
+    if (matchParen)
+        return [matchParen[1].toUpperCase()];
+    // 2. Nhập trực tiếp mã 3 ký tự IATA: "HAN", "DAD", "sgn"
     if (/^[A-Za-z]{3}$/.test(trimmed)) {
         return [trimmed.toUpperCase()];
     }
-
+    // 3. Tra cứu theo quy tắc tên thành phố / sân bay
     const norm = normalizeVN(trimmed);
     const codes = new Set();
     for (const rule of AIRPORT_RULES) {
-        if (rule.keywords) {
+        if (rule.keywords && rule.codes) {
             for (const kw of rule.keywords) {
                 if (norm.includes(kw)) {
                     rule.codes.forEach((c) => codes.add(c));
                     break;
                 }
             }
-        } else if (rule.matcher) {
+        }
+        else if (rule.matcher) {
             const res = rule.matcher(norm);
             if (res) {
                 res.forEach((c) => codes.add(c));
@@ -116,15 +118,15 @@ const resolveAirportCodes = (query) => {
     }
     return Array.from(codes);
 };
-
+exports.resolveAirportCodes = resolveAirportCodes;
 /* ============================== SERVICE METHODS ============================== */
 const getFlights = (params) => __awaiter(void 0, void 0, void 0, function* () {
     const { page, limit, skip } = getPagination(params.page, params.limit);
     const where = {};
     const andConditions = [];
-
+    // Tìm kiếm thông minh điểm khởi hành (Chấp nhận cả mã IATA HAN, DAD và tên thành phố Hà Nội, Đà Nẵng...)
     if (params.departure_airport) {
-        const depCodes = resolveAirportCodes(params.departure_airport);
+        const depCodes = (0, exports.resolveAirportCodes)(params.departure_airport);
         if (depCodes.length > 0) {
             andConditions.push({
                 OR: [
@@ -132,15 +134,16 @@ const getFlights = (params) => __awaiter(void 0, void 0, void 0, function* () {
                     { departure_airport: { contains: params.departure_airport.trim(), mode: 'insensitive' } },
                 ],
             });
-        } else {
+        }
+        else {
             andConditions.push({
                 departure_airport: { contains: params.departure_airport.trim(), mode: 'insensitive' },
             });
         }
     }
-
+    // Tìm kiếm thông minh điểm đến (Chấp nhận cả mã IATA và tên thành phố/điểm đến)
     if (params.arrival_airport) {
-        const arrCodes = resolveAirportCodes(params.arrival_airport);
+        const arrCodes = (0, exports.resolveAirportCodes)(params.arrival_airport);
         if (arrCodes.length > 0) {
             andConditions.push({
                 OR: [
@@ -148,13 +151,13 @@ const getFlights = (params) => __awaiter(void 0, void 0, void 0, function* () {
                     { arrival_airport: { contains: params.arrival_airport.trim(), mode: 'insensitive' } },
                 ],
             });
-        } else {
+        }
+        else {
             andConditions.push({
                 arrival_airport: { contains: params.arrival_airport.trim(), mode: 'insensitive' },
             });
         }
     }
-
     if (andConditions.length > 0) {
         where.AND = andConditions;
     }
@@ -237,7 +240,7 @@ const getAirports = () => __awaiter(void 0, void 0, void 0, function* () {
         if (f.arrival_airport)
             airportSet.add(f.arrival_airport);
     });
-    const mapped = Array.from(airportSet).map((code) => AIRPORT_FULL_NAMES[code] || code);
+    const mapped = Array.from(airportSet).map((code) => exports.AIRPORT_FULL_NAMES[code] || code);
     return mapped.sort((a, b) => a.localeCompare(b, 'vi'));
 });
 exports.default = {

@@ -213,9 +213,6 @@ export default function BookingsPage() {
             <section className="bg-[#0f141e] text-white py-12 px-6 lg:px-12 border-b border-gray-800">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <span className="text-xs font-black uppercase tracking-widest text-[#FACC15] block mb-2">
-                            Quản Lý Hành Trình · My Bookings
-                        </span>
                         <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white font-serif">
                             Lịch Sử & Chi Tiết Đặt Chỗ
                         </h1>

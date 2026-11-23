@@ -198,15 +198,6 @@ export default function CombosPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
 
                 <div className="max-w-7xl mx-auto relative z-10">
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FACC15] text-black text-xs font-black uppercase tracking-widest rounded-sm shadow-sm">
-                            <Sparkles className="w-3.5 h-3.5" /> Gói Du Lịch Tiết Kiệm
-                        </span>
-                        <span className="text-gray-100 text-xs font-bold uppercase tracking-wider drop-shadow-sm">
-                            Bundle & Save up to 15%
-                        </span>
-                    </div>
-
                     <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white max-w-3xl font-serif drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                         Combo Trọn Gói: Tour + Khách Sạn + Vé Máy Bay
                     </h1>

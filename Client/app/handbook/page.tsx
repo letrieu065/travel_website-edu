@@ -184,6 +184,17 @@ function HandbookContent() {
     // State bài viết đang xem chi tiết (Modal)
     const [activeArticle, setActiveArticle] = useState<HandbookArticle | null>(null);
 
+    const targetArticleId = searchParams.get('id');
+
+    useEffect(() => {
+        if (targetArticleId && articles.length > 0) {
+            const found = articles.find((a) => String(a.id) === String(targetArticleId));
+            if (found) {
+                setActiveArticle(found);
+            }
+        }
+    }, [targetArticleId, articles]);
+
     // Tự động gọi API lấy dữ liệu thực tế từ Supabase khi tải trang
     useEffect(() => {
         let isMounted = true;
@@ -281,10 +292,6 @@ function HandbookContent() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
 
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center relative z-10">
-                    <span className="inline-block bg-[#FACC15] text-black text-[10px] sm:text-xs font-black px-2.5 py-0.5 uppercase tracking-widest mb-2 shadow-sm">
-                        Natura Travel Handbook
-                    </span>
-
                     <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white mb-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]">
                         Cẩm Nang & Kinh Nghiệm Du Lịch
                     </h1>

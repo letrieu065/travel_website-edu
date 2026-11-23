@@ -32,17 +32,17 @@ const handleControllerError = (res: Response, error: any, defaultMessage: string
 const generateItinerary = async (req: Request, res: Response) => {
     try {
         const { budget, days, interests, destination, guests, departure_location, departureLocation } = req.body;
-        if (!budget || !days) {
-            return res.status(400).json({ status: 'error', message: 'Vui lòng nhập ngân sách (budget) và số ngày (days)' });
+        if (!budget) {
+            return res.status(400).json({ status: 'error', message: 'Vui lòng nhập ngân sách chuyến đi (budget)' });
         }
 
         const result = await aiService.generateItinerary({
             budget: Number(budget),
-            days: Number(days),
+            days: days ? Number(days) : 3,
             interests: Array.isArray(interests) ? interests : [],
             destination,
             departure_location: departure_location || departureLocation,
-            guests: guests ? Number(guests) : undefined,
+            guests: guests ? Number(guests) : 2,
         });
 
         return res.status(200).json({ status: 'success', data: result });
