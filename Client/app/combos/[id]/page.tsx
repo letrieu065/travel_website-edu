@@ -31,6 +31,7 @@ import {
     Star,
     ChevronRight,
 } from 'lucide-react';
+import { AirlineLogoBadge } from '@/components/common/AirlineBranding';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3600';
 
@@ -481,9 +482,7 @@ function ComboDetailContent() {
                                             }`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-purple-50 text-purple-700 flex items-center justify-center shrink-0 font-black text-xs">
-                                                    ✈
-                                                </div>
+                                                <AirlineLogoBadge airlineName={flight.planes?.airline} size="sm" />
                                                 <div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-xs font-black text-gray-900">

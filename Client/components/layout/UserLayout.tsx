@@ -115,9 +115,11 @@ const UserHeader: React.FC = () => {
             </Link>
 
             <nav className="nav-links">
-                <Link href="/tours" className="nav-link-item">Destinations</Link>
+                <Link href="/destinations" className="nav-link-item">Destinations</Link>
                 <Link href="/tours" className="nav-link-item">Tours</Link>
                 <Link href="/hotels" className="nav-link-item">Hotels</Link>
+                <Link href="/flights" className="nav-link-item">Flights</Link>
+                <Link href="/handbook" className="nav-link-item">Handbook</Link>
                 <Link href="/about-us" className="nav-link-item">About Us</Link>
             </nav>
 
@@ -231,11 +233,18 @@ const UserHeader: React.FC = () => {
                                     Trang chủ
                                 </Link>
                                 <Link
+                                    href="/destinations"
+                                    onClick={() => setIsMobileNavOpen(false)}
+                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
+                                >
+                                    Điểm Đến
+                                </Link>
+                                <Link
                                     href="/tours"
                                     onClick={() => setIsMobileNavOpen(false)}
                                     className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
                                 >
-                                    Điểm Đến & Tours
+                                    Tours Du Lịch
                                 </Link>
                                 <Link
                                     href="/hotels"
@@ -250,6 +259,14 @@ const UserHeader: React.FC = () => {
                                     className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50"
                                 >
                                     Vé Máy Bay
+                                </Link>
+                                <Link
+                                    href="/handbook"
+                                    onClick={() => setIsMobileNavOpen(false)}
+                                    className="text-xs font-black uppercase tracking-wider text-gray-800 hover:text-black py-2.5 border-b border-gray-50 flex items-center justify-between"
+                                >
+                                    <span>Cẩm Nang (Handbook)</span>
+                                    <span className="text-[9px] bg-[#FACC15] text-black px-1.5 py-0.5 font-black uppercase tracking-widest">New</span>
                                 </Link>
                                 <Link
                                     href="/about-us"

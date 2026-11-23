@@ -23,6 +23,7 @@ const insurances_route_1 = __importDefault(require("./features/insurances/insura
 const loans_route_1 = __importDefault(require("./features/loans/loans.route"));
 const notifications_route_1 = __importDefault(require("./features/notifications/notifications.route"));
 const restaurants_route_1 = __importDefault(require("./features/restaurants/restaurants.route"));
+const handbook_route_1 = __importDefault(require("./features/handbook/handbook.route"));
 const app = (0, express_1.default)();
 // 1. Cài đặt Global Middlewares
 app.use((0, helmet_1.default)()); // Bảo mật HTTP headers
@@ -83,6 +84,8 @@ app.use('/api/v1/insurances', insurances_route_1.default);
 app.use('/api/v1/loans', loans_route_1.default);
 app.use('/api/v1/notifications', notifications_route_1.default);
 app.use('/api/v1/restaurants', restaurants_route_1.default);
+app.use('/api/v1/handbook', handbook_route_1.default);
+app.use('/api/v1/handbooks', handbook_route_1.default);
 // Alias tương thích cho các lời gọi API chưa có /v1 ở Client hiện tại (HomePage.tsx & UserLayout.tsx)
 app.use('/api/tours', tours_route_1.default);
 app.use('/api/users', auth_middleware_1.authenticate, user_route_1.default);

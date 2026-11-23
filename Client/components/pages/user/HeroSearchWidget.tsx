@@ -109,7 +109,7 @@ export default function HeroSearchWidget() {
                                 <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
                                 <input
                                     type="text"
-                                    placeholder="Đà Nẵng, Sa Pa, Tokyo..."
+                                    placeholder="Đà Nẵng, Sa Pa, Phú Quốc..."
                                     value={tourSearch}
                                     onChange={(e) => setTourSearch(e.target.value)}
                                     className="w-full pl-9 pr-3 py-2.5 text-xs font-bold border border-gray-300 focus:outline-none focus:border-black text-gray-900"
@@ -127,10 +127,9 @@ export default function HeroSearchWidget() {
                                 className="w-full px-3 py-2.5 text-xs font-bold border border-gray-300 focus:outline-none focus:border-black bg-white text-gray-900"
                             >
                                 <option value="">Tất cả loại tour</option>
-                                <option value="Trong nước">Trong nước</option>
-                                <option value="Quốc tế">Quốc tế</option>
                                 <option value="Khám phá">Khám phá thiên nhiên</option>
                                 <option value="Nghỉ dưỡng">Nghỉ dưỡng cao cấp</option>
+                                <option value="Văn hóa">Di sản & Văn hóa</option>
                             </select>
                         </div>
 
@@ -236,7 +235,7 @@ export default function HeroSearchWidget() {
                                 <MapPin className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
                                 <input
                                     type="text"
-                                    placeholder="SGN (Tân Sơn Nhất), HAN..."
+                                    placeholder="Hà Nội (HAN), TP.HCM (SGN)..."
                                     value={flightFrom}
                                     onChange={(e) => setFlightFrom(e.target.value)}
                                     className="w-full pl-9 pr-3 py-2.5 text-xs font-bold border border-gray-300 focus:outline-none focus:border-black text-gray-900"
@@ -252,7 +251,7 @@ export default function HeroSearchWidget() {
                                 <MapPin className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
                                 <input
                                     type="text"
-                                    placeholder="DAD (Đà Nẵng), PQC..."
+                                    placeholder="Đà Nẵng (DAD), Phú Quốc (PQC)..."
                                     value={flightTo}
                                     onChange={(e) => setFlightTo(e.target.value)}
                                     className="w-full pl-9 pr-3 py-2.5 text-xs font-bold border border-gray-300 focus:outline-none focus:border-black text-gray-900"

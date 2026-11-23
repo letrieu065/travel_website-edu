@@ -7,6 +7,7 @@ export interface GenerateItineraryInput {
     days: number;
     interests: string[];
     destination?: string;
+    departure_location?: string;
     guests?: number;
 }
 
@@ -46,8 +47,8 @@ const generateItinerary = async (input: GenerateItineraryInput) => {
     const budget = Math.max(0, Number(input.budget) || 5000000);
     const interestsText = (input.interests || []).join(', ');
 
-    // Tìm các tour và khách sạn phù hợp trong database làm gợi ý thực tế
-    const [matchingTours, matchingHotels] = await Promise.all([
+    // Tìm các tour, khách sạn và chuyến bay phù hợp trong database làm gợi ý thực tế
+    const [matchingTours, matchingHotels, matchingFlights] = await Promise.all([
         prisma.tours.findMany({
             where: input.destination
                 ? {
@@ -77,13 +78,29 @@ const generateItinerary = async (input: GenerateItineraryInput) => {
             take: 3,
             include: { hotel_images: { take: 1 } },
         }),
+        prisma.flights.findMany({
+            where: {
+                ...(input.departure_location
+                    ? { departure_airport: { contains: input.departure_location, mode: 'insensitive' } }
+                    : {}),
+                ...(input.destination
+                    ? { arrival_airport: { contains: input.destination, mode: 'insensitive' } }
+                    : {}),
+            },
+            take: 3,
+            include: { planes: true },
+            orderBy: { ticket_price: 'asc' },
+        }),
     ]);
 
-    const prompt = `Bạn là trợ lý du lịch thông minh của Natura Travel. Hãy lập lịch trình du lịch ${days} ngày đến ${
+    const guests = Math.max(1, Number(input.guests) || 2);
+    const prompt = `Bạn là trợ lý du lịch thông minh của Natura Travel. Khách hàng xuất phát từ ${
+        input.departure_location || 'Hà Nội'
+    } đi du lịch ${days} ngày đến ${
         input.destination || 'điểm đến phù hợp tại Việt Nam'
-    } với ngân sách ${budget.toLocaleString('vi-VN')} VND, sở thích: ${
-        interestsText || 'tham quan, ẩm thực'
-    }. Trả lời ngắn gọn theo từng ngày.`;
+    } cho đoàn ${guests} khách với tổng ngân sách ${budget.toLocaleString('vi-VN')} VND, sở thích: ${
+        interestsText || 'tham quan, nghỉ dưỡng'
+    }. Lưu ý logic chi phí: Tour du lịch tính cho 1 khách và đã bao gồm khách sạn trong thời gian đi tour; mỗi phòng khách sạn tiêu chuẩn 2 khách, nếu số ngày chuyến đi dài hơn số ngày tour thì chỉ cần thuê thêm khách sạn cho các ngày còn lại. Hãy đưa ra lời khuyên ngắn gọn, súc tích và gợi ý phương án vé máy bay, khách sạn và tour phù hợp nhất.`;
 
     const aiSummary = await callGeminiIfConfigured(prompt);
 
@@ -106,11 +123,13 @@ const generateItinerary = async (input: GenerateItineraryInput) => {
             days,
             interests: input.interests,
             destination: input.destination || 'Tự động gợi ý',
+            departure_location: input.departure_location || 'Hà Nội',
         },
         ai_narrative: aiSummary,
         daily_plan: dailyPlan,
         recommended_tours: matchingTours,
         recommended_hotels: matchingHotels,
+        recommended_flights: matchingFlights,
     };
 };
 

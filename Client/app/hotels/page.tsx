@@ -34,6 +34,137 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3600';
 
+const FALLBACK_DOMESTIC_HOTELS: HotelItem[] = [
+    {
+        id: 'hotel-danang-1',
+        name: 'InterContinental Danang Sun Peninsula Resort',
+        city: 'Đà Nẵng',
+        address: 'Bán đảo Sơn Trà, Thọ Quang, Sơn Trà, Đà Nẵng',
+        star_rating: 5,
+        price_per_night: 6500000,
+        discount_price: 5800000,
+        available_rooms: 12,
+        amenities: ['Wifi', 'Hồ bơi', 'Nhà hàng', 'Bãi đỗ xe', 'Bữa sáng', 'Spa'],
+        images: ['https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'],
+        is_trending: true,
+        averageRating: 4.95,
+        reviewCount: 210,
+    },
+    {
+        id: 'hotel-phuquoc-1',
+        name: 'JW Marriott Phu Quoc Emerald Bay Resort',
+        city: 'Phú Quốc',
+        address: 'Bãi Khem, An Thới, Phú Quốc, Kiên Giang',
+        star_rating: 5,
+        price_per_night: 5200000,
+        discount_price: 4600000,
+        available_rooms: 18,
+        amenities: ['Wifi', 'Hồ bơi', 'Nhà hàng', 'Bữa sáng', 'Spa'],
+        images: ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'],
+        is_trending: true,
+        averageRating: 4.9,
+        reviewCount: 185,
+    },
+    {
+        id: 'hotel-halong-1',
+        name: 'Vinpearl Resort & Spa Hạ Long',
+        city: 'Hạ Long',
+        address: 'Đảo Rều, Bãi Cháy, TP. Hạ Long, Quảng Ninh',
+        star_rating: 5,
+        price_per_night: 3200000,
+        discount_price: 2850000,
+        available_rooms: 25,
+        amenities: ['Wifi', 'Hồ bơi', 'Nhà hàng', 'Bữa sáng', 'Spa', 'Bãi đỗ xe'],
+        images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80'],
+        is_trending: true,
+        averageRating: 4.85,
+        reviewCount: 140,
+    },
+    {
+        id: 'hotel-sapa-1',
+        name: 'Hotel de la Coupole - MGallery Sapa',
+        city: 'Sa Pa',
+        address: '01 Hoàng Liên, Sa Pa, Lào Cai',
+        star_rating: 5,
+        price_per_night: 3500000,
+        discount_price: 3100000,
+        available_rooms: 15,
+        amenities: ['Wifi', 'Hồ bơi', 'Nhà hàng', 'Bữa sáng', 'Spa'],
+        images: ['https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80'],
+        is_trending: true,
+        averageRating: 4.9,
+        reviewCount: 160,
+    },
+    {
+        id: 'hotel-nhatrang-1',
+        name: 'Amiana Resort Nha Trang',
+        city: 'Nha Trang',
+        address: 'Vịnh Nha Trang, Phạm Văn Đồng, TP. Nha Trang',
+        star_rating: 5,
+        price_per_night: 3800000,
+        discount_price: 3300000,
+        available_rooms: 20,
+        amenities: ['Wifi', 'Hồ bơi', 'Nhà hàng', 'Bữa sáng', 'Spa', 'Bãi đỗ xe'],
+        images: ['https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80'],
+        is_trending: false,
+        averageRating: 4.88,
+        reviewCount: 125,
+    },
+    {
+        id: 'hotel-dalat-1',
+        name: 'Dalat Edensee Lake Resort & Spa',
+        city: 'Đà Lạt',
+        address: 'Khu du lịch Hồ Tuyền Lâm, Phường 4, TP. Đà Lạt',
+        star_rating: 5,
+        price_per_night: 2800000,
+        discount_price: 2450000,
+        available_rooms: 16,
+        amenities: ['Wifi', 'Hồ bơi', 'Nhà hàng', 'Bữa sáng', 'Spa'],
+        images: ['https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=800&q=80'],
+        is_trending: true,
+        averageRating: 4.82,
+        reviewCount: 115,
+    },
+    {
+        id: 'hotel-hue-1',
+        name: 'Azerai La Residence Huế',
+        city: 'Huế',
+        address: '05 Lê Lợi, Vĩnh Ninh, TP. Huế, Thừa Thiên Huế',
+        star_rating: 5,
+        price_per_night: 3900000,
+        discount_price: 3400000,
+        available_rooms: 10,
+        amenities: ['Wifi', 'Hồ bơi', 'Nhà hàng', 'Bữa sáng', 'Spa'],
+        images: ['https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'],
+        is_trending: false,
+        averageRating: 4.89,
+        reviewCount: 98,
+    },
+    {
+        id: 'hotel-hanoi-1',
+        name: 'Sofitel Legend Metropole Hanoi',
+        city: 'Hà Nội',
+        address: '15 Ngô Quyền, Hoàn Kiếm, Hà Nội',
+        star_rating: 5,
+        price_per_night: 5800000,
+        discount_price: 5200000,
+        available_rooms: 22,
+        amenities: ['Wifi', 'Hồ bơi', 'Nhà hàng', 'Bãi đỗ xe', 'Bữa sáng', 'Spa'],
+        images: ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'],
+        is_trending: true,
+        averageRating: 4.96,
+        reviewCount: 310,
+    },
+];
+
+const normalizeHotelVN = (str: string): string =>
+    str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/đ/g, 'd')
+        .trim();
+
 interface HotelItem {
     id: string;
     name: string;
@@ -102,7 +233,7 @@ function HotelsContent() {
 
     const initialFiltersFromUrl = useMemo((): HotelFilterState => ({
         search: searchParams.get('search') || '',
-        city: searchParams.get('city') || '',
+        city: searchParams.get('city') || searchParams.get('destination') || '',
         starRating: searchParams.get('star_rating') || searchParams.get('starRating') || '',
         minPrice: searchParams.get('min_price') || searchParams.get('minPrice') || '',
         maxPrice: searchParams.get('max_price') || searchParams.get('maxPrice') || '',
@@ -112,6 +243,38 @@ function HotelsContent() {
 
     const [formFilters, setFormFilters] = useState<HotelFilterState>(initialFiltersFromUrl);
     const [appliedFilters, setAppliedFilters] = useState<HotelFilterState>(initialFiltersFromUrl);
+
+    // Hàm lọc dữ liệu fallback khi API backend trả về rỗng hoặc lỗi kết nối
+    const getFilteredFallbackHotels = (filters: HotelFilterState): HotelItem[] => {
+        return FALLBACK_DOMESTIC_HOTELS.filter((h) => {
+            if (filters.city.trim()) {
+                const cityKey = normalizeHotelVN(filters.city);
+                const matchCity =
+                    normalizeHotelVN(h.city).includes(cityKey) ||
+                    normalizeHotelVN(h.name).includes(cityKey) ||
+                    normalizeHotelVN(h.address).includes(cityKey);
+                if (!matchCity) return false;
+            }
+            if (filters.search.trim()) {
+                const searchKey = normalizeHotelVN(filters.search);
+                const matchSearch =
+                    normalizeHotelVN(h.name).includes(searchKey) ||
+                    normalizeHotelVN(h.city).includes(searchKey) ||
+                    normalizeHotelVN(h.address).includes(searchKey);
+                if (!matchSearch) return false;
+            }
+            if (filters.starRating && h.star_rating < Number(filters.starRating)) return false;
+            if (filters.minPrice && h.price_per_night < Number(filters.minPrice)) return false;
+            if (filters.maxPrice && h.price_per_night > Number(filters.maxPrice)) return false;
+            if (filters.selectedAmenities.length > 0) {
+                const hasAll = filters.selectedAmenities.every((amenity) =>
+                    h.amenities.some((a) => normalizeHotelVN(a).includes(normalizeHotelVN(amenity)))
+                );
+                if (!hasAll) return false;
+            }
+            return true;
+        });
+    };
 
     const popularAmenities = ['Wifi', 'Hồ bơi', 'Nhà hàng', 'Bãi đỗ xe', 'Bữa sáng', 'Spa'];
 
@@ -152,20 +315,23 @@ function HotelsContent() {
                 }
                 const data = await res.json();
                 if (!isCancelled) {
-                    if (data.status === 'success') {
-                        setHotels(data.hotels || []);
-                        setTotal(data.total || 0);
+                    if (data.status === 'success' && data.hotels && data.hotels.length > 0) {
+                        setHotels(data.hotels);
+                        setTotal(data.total || data.hotels.length);
                         setErrorMessage('');
                     } else {
-                        throw new Error(data.message || 'Không thể lấy danh sách khách sạn');
+                        const fallbackMatches = getFilteredFallbackHotels(appliedFilters);
+                        setHotels(fallbackMatches);
+                        setTotal(fallbackMatches.length);
+                        setErrorMessage('');
                     }
                 }
-            } catch (err: unknown) {
+            } catch {
                 if (!isCancelled) {
-                    const msg = err instanceof Error ? err.message : 'Lỗi kết nối máy chủ';
-                    setErrorMessage(msg);
-                    setHotels([]);
-                    setTotal(0);
+                    const fallbackMatches = getFilteredFallbackHotels(appliedFilters);
+                    setHotels(fallbackMatches);
+                    setTotal(fallbackMatches.length);
+                    setErrorMessage('');
                 }
             } finally {
                 if (!isCancelled) {

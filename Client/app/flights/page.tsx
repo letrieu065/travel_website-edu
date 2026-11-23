@@ -24,7 +24,9 @@ import {
     ChevronRight,
     Clock,
     Armchair,
+    Luggage,
 } from 'lucide-react';
+import { AirlineLogoBadge, getAirlineInfo } from '@/components/common/AirlineBranding';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3600';
 
@@ -56,6 +58,93 @@ interface FlightFilterState {
     maxPrice: string;
     sort: string;
 }
+
+const DEFAULT_AIRPORTS = [
+    'Hà Nội - Sân bay Nội Bài (HAN)',
+    'TP. Hồ Chí Minh - Sân bay Tân Sơn Nhất (SGN)',
+    'Đà Nẵng - Sân bay Đà Nẵng (DAD)',
+    'Nha Trang - Sân bay Cam Ranh (CXR)',
+    'Phú Quốc - Sân bay Phú Quốc (PQC)',
+    'Hải Phòng - Sân bay Cát Bi (HPH)',
+    'Huế - Sân bay Phú Bài (HUI)',
+    'Đà Lạt - Sân bay Liên Khương (DLI)',
+    'Cần Thơ - Sân bay Cần Thơ (VCA)',
+    'Quy Nhơn - Sân bay Phù Cát (UIH)',
+    'Vinh - Sân bay Vinh (VII)',
+    'Quảng Bình - Sân bay Đồng Hới (VDH)',
+    'Pleiku - Sân bay Pleiku (PXU)',
+    'Buôn Ma Thuột - Sân bay Buôn Ma Thuột (BMV)',
+    'Côn Đảo - Sân bay Côn Đảo (VCS)',
+];
+
+const DEFAULT_AIRLINES = [
+    'Vietnam Airlines',
+    'Vietjet Air',
+    'Bamboo Airways',
+    'Vietravel Airlines',
+    'Pacific Airlines',
+];
+
+const normalizeVN = (str: string): string => {
+    return str
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'd')
+        .trim();
+};
+
+const AIRPORT_CODE_TO_CITY: Record<string, string> = {
+    'HAN': 'Hà Nội (HAN)',
+    'SGN': 'TP. Hồ Chí Minh (SGN)',
+    'DAD': 'Đà Nẵng (DAD)',
+    'CXR': 'Nha Trang (CXR)',
+    'PQC': 'Phú Quốc (PQC)',
+    'HPH': 'Hải Phòng (HPH)',
+    'HUI': 'Huế (HUI)',
+    'DLI': 'Đà Lạt (DLI)',
+    'VCA': 'Cần Thơ (VCA)',
+    'UIH': 'Quy Nhơn (UIH)',
+    'VII': 'Vinh (VII)',
+    'BMV': 'Buôn Ma Thuột (BMV)',
+    'VCL': 'Chu Lai (VCL)',
+    'PXU': 'Pleiku (PXU)',
+    'VCS': 'Côn Đảo (VCS)',
+    'VDH': 'Đồng Hới (VDH)',
+    'VDO': 'Vân Đồn (VDO)',
+};
+
+const getAirportDisplay = (codeOrName?: string | null): string => {
+    if (!codeOrName) return '';
+    const upper = codeOrName.trim().toUpperCase();
+    if (AIRPORT_CODE_TO_CITY[upper]) return AIRPORT_CODE_TO_CITY[upper];
+    return codeOrName;
+};
+
+const matchAirportOption = (input?: string | null, options: string[] = []): string => {
+    if (!input || !input.trim()) return '';
+    const trimmed = input.trim();
+    if (options.includes(trimmed)) return trimmed;
+
+    // 1. Mã 3 ký tự (e.g. HAN, DAD)
+    const matchCode = trimmed.match(/\(([A-Za-z]{3})\)/) || trimmed.match(/^[A-Za-z]{3}$/);
+    if (matchCode) {
+        const code = (matchCode[1] || matchCode[0]).toUpperCase();
+        const found = options.find((opt) => opt.includes(`(${code})`) || opt.toUpperCase() === code);
+        if (found) return found;
+    }
+
+    // 2. Tên thành phố không dấu hoặc có dấu
+    const norm = normalizeVN(trimmed);
+    const found = options.find((opt) => {
+        const optNorm = normalizeVN(opt);
+        return optNorm.includes(norm) || norm.includes(optNorm);
+    });
+    if (found) return found;
+
+    return trimmed;
+};
 
 const initialFlightFilters: FlightFilterState = {
     departureAirport: '',
@@ -110,26 +199,37 @@ const calculateDuration = (startIso: string, endIso: string): string => {
 function FlightsContent() {
     const searchParams = useSearchParams();
     const [flights, setFlights] = useState<FlightItem[]>([]);
-    const [airports, setAirports] = useState<string[]>([]);
-    const [airlines, setAirlines] = useState<string[]>([]);
+    const [airports, setAirports] = useState<string[]>(DEFAULT_AIRPORTS);
+    const [airlines, setAirlines] = useState<string[]>(DEFAULT_AIRLINES);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
     const limit = 8;
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState('');
 
-    const initialFiltersFromUrl = useMemo((): FlightFilterState => ({
-        departureAirport: searchParams.get('departure_airport') || searchParams.get('departureAirport') || searchParams.get('from') || '',
-        arrivalAirport: searchParams.get('arrival_airport') || searchParams.get('arrivalAirport') || searchParams.get('to') || '',
-        departureDate: searchParams.get('departure_date') || searchParams.get('departureDate') || searchParams.get('date') || '',
-        passengers: searchParams.get('passengers') || '1',
-        airline: searchParams.get('airline') || '',
-        maxPrice: searchParams.get('max_price') || searchParams.get('maxPrice') || '',
-        sort: searchParams.get('sort') || 'departure_asc',
-    }), [searchParams]);
+    const initialFiltersFromUrl = useMemo((): FlightFilterState => {
+        const rawDep = searchParams.get('departure_airport') || searchParams.get('departureAirport') || searchParams.get('from') || '';
+        const rawArr = searchParams.get('arrival_airport') || searchParams.get('arrivalAirport') || searchParams.get('to') || '';
+
+        return {
+            departureAirport: matchAirportOption(rawDep, DEFAULT_AIRPORTS),
+            arrivalAirport: matchAirportOption(rawArr, DEFAULT_AIRPORTS),
+            departureDate: searchParams.get('departure_date') || searchParams.get('departureDate') || searchParams.get('date') || '',
+            passengers: searchParams.get('passengers') || '1',
+            airline: searchParams.get('airline') || '',
+            maxPrice: searchParams.get('max_price') || searchParams.get('maxPrice') || '',
+            sort: searchParams.get('sort') || 'departure_asc',
+        };
+    }, [searchParams]);
 
     const [formFilters, setFormFilters] = useState<FlightFilterState>(initialFiltersFromUrl);
     const [appliedFilters, setAppliedFilters] = useState<FlightFilterState>(initialFiltersFromUrl);
+
+    // Đồng bộ lại bộ lọc khi URL query parameters thay đổi (click từ trang điểm đến hoặc trang chủ)
+    useEffect(() => {
+        setFormFilters(initialFiltersFromUrl);
+        setAppliedFilters(initialFiltersFromUrl);
+    }, [initialFiltersFromUrl]);
 
     // Tải danh sách sân bay và hãng hàng không
     useEffect(() => {
@@ -146,15 +246,17 @@ function FlightsContent() {
                 if (!isCancelled) {
                     if (airportsRes.ok) {
                         const data = await airportsRes.json();
-                        if (data.status === 'success' && Array.isArray(data.airports)) {
-                            setAirports(data.airports);
+                        if (data.status === 'success' && Array.isArray(data.airports) && data.airports.length > 0) {
+                            const merged = Array.from(new Set([...data.airports, ...DEFAULT_AIRPORTS]));
+                            const cleanOptions = merged.filter((ap) => ap.includes(' - ') || !merged.some((m) => m.includes(`(${ap})`)));
+                            setAirports(cleanOptions);
                         }
                     }
 
                     if (airlinesRes.ok) {
                         const data = await airlinesRes.json();
-                        if (data.status === 'success' && Array.isArray(data.airlines)) {
-                            setAirlines(data.airlines);
+                        if (data.status === 'success' && Array.isArray(data.airlines) && data.airlines.length > 0) {
+                            setAirlines(Array.from(new Set([...data.airlines, ...DEFAULT_AIRLINES])));
                         }
                     }
                 }
@@ -249,13 +351,13 @@ function FlightsContent() {
             <section className="bg-black text-white py-14 px-6 border-b border-gray-800">
                 <div className="max-w-7xl mx-auto">
                     <span className="text-xs font-black tracking-widest text-[#FACC15] uppercase">
-                        Sẵn sàng cất cánh
+                        Sẵn sàng cất cánh · Bầu Trời Việt Nam
                     </span>
                     <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight mt-2">
-                        Tìm Kiếm Chuyến Bay
+                        Tìm Kiếm Vé Máy Bay Nội Địa
                     </h1>
                     <p className="mt-3 text-gray-400 text-sm md:text-base max-w-2xl">
-                        So sánh giá vé các hãng hàng không hàng đầu, lịch bay linh hoạt và quy trình đặt chỗ nhanh chóng.
+                        So sánh giá vé và lịch bay các hãng hàng không hàng đầu Việt Nam: Vietnam Airlines, Vietjet Air, Bamboo Airways, Vietravel Airlines, Pacific Airlines.
                     </p>
                 </div>
             </section>
@@ -440,8 +542,9 @@ function FlightsContent() {
                     /* Flights List (Ticket Cards) */
                     <div className="space-y-4">
                         {flights.map((flight) => {
-                            const airlineName = flight.planes?.airline || 'Hãng hàng không';
-                            const planeModel = flight.planes?.model || 'Airbus / Boeing';
+                            const airlineName = flight.planes?.airline || 'Vietnam Airlines';
+                            const airlineInfo = getAirlineInfo(airlineName);
+                            const planeModel = flight.planes?.model || airlineInfo.aircraftModel;
                             const durationText = calculateDuration(flight.departure_time, flight.arrival_time);
 
                             return (
@@ -451,17 +554,22 @@ function FlightsContent() {
                                 >
                                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                                         {/* Airline & Plane Info */}
-                                        <div className="flex items-center gap-4 min-w-[200px]">
-                                            <div className="w-12 h-12 bg-black text-white flex items-center justify-center shrink-0">
-                                                <Plane className="w-6 h-6" />
-                                            </div>
+                                        <div className="flex items-center gap-4 min-w-[280px] sm:min-w-[320px]">
+                                            <AirlineLogoBadge airlineName={airlineName} size="md" />
                                             <div>
-                                                <h4 className="text-base font-black uppercase text-gray-900">
-                                                    {airlineName}
+                                                <h4 className="text-base font-black uppercase text-gray-900 leading-tight">
+                                                    {airlineInfo.name}
                                                 </h4>
-                                                <p className="text-xs text-gray-500 font-bold">
-                                                    {flight.flight_number} · {planeModel}
-                                                </p>
+                                                <div className="flex items-center gap-2 text-xs text-gray-500 font-bold mt-1">
+                                                    <span>{flight.flight_number} · {planeModel}</span>
+                                                    <span>·</span>
+                                                    <span className="inline-flex items-center gap-1 text-gray-600 font-semibold text-[11px]">
+                                                        <Luggage className="w-3.5 h-3.5 text-gray-400" /> 1 x 23 kg
+                                                    </span>
+                                                </div>
+                                                <span className="text-[10px] font-medium text-gray-400 block mt-0.5">
+                                                    {airlineInfo.slogan}
+                                                </span>
                                             </div>
                                         </div>
 
@@ -473,7 +581,7 @@ function FlightsContent() {
                                                     {formatTime(flight.departure_time)}
                                                 </span>
                                                 <span className="text-xs font-bold text-gray-700 block uppercase">
-                                                    {flight.departure_airport}
+                                                    {getAirportDisplay(flight.departure_airport)}
                                                 </span>
                                                 <span className="text-[10px] text-gray-400 block">
                                                     {formatDate(flight.departure_time)}
@@ -500,7 +608,7 @@ function FlightsContent() {
                                                     {formatTime(flight.arrival_time)}
                                                 </span>
                                                 <span className="text-xs font-bold text-gray-700 block uppercase">
-                                                    {flight.arrival_airport}
+                                                    {getAirportDisplay(flight.arrival_airport)}
                                                 </span>
                                                 <span className="text-[10px] text-gray-400 block">
                                                     {formatDate(flight.arrival_time)}

@@ -222,6 +222,7 @@ function TourDetailContent({
                 title: tour?.title || 'Tour du lịch Natura Travel',
             });
 
+            setBookingSuccess(true);
             router.push(`/checkout?${checkoutParams.toString()}`);
         } finally {
             setIsSubmitting(false);

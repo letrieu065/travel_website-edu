@@ -218,7 +218,7 @@ export default async function HomePage() {
                         </h2>
                     </div>
                     <Link
-                        href="/tours"
+                        href="/destinations"
                         className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-black hover:underline"
                     >
                         Tất cả điểm đến <ArrowRight className="w-4 h-4" />
@@ -478,7 +478,7 @@ export default async function HomePage() {
                             Minh Bạch & Uy Tín
                         </h3>
                         <p className="text-xs text-gray-600 leading-relaxed">
-                            Giá trọn gói rõ ràng, không phụ phí ẩn, tích hợp bảo hiểm du lịch quốc tế trong từng chuyến đi.
+                            Giá trọn gói rõ ràng, không phụ phí ẩn, tích hợp bảo hiểm du lịch toàn diện trong từng chuyến đi.
                         </p>
                     </div>
 

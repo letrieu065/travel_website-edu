@@ -20,6 +20,7 @@ import insurancesRoute from './features/insurances/insurances.route';
 import loansRoute from './features/loans/loans.route';
 import notificationsRoute from './features/notifications/notifications.route';
 import restaurantsRoute from './features/restaurants/restaurants.route';
+import handbookRoute from './features/handbook/handbook.route';
 
 const app: Express = express();
 
@@ -90,6 +91,8 @@ app.use('/api/v1/insurances', insurancesRoute);
 app.use('/api/v1/loans', loansRoute);
 app.use('/api/v1/notifications', notificationsRoute);
 app.use('/api/v1/restaurants', restaurantsRoute);
+app.use('/api/v1/handbook', handbookRoute);
+app.use('/api/v1/handbooks', handbookRoute);
 
 // Alias tương thích cho các lời gọi API chưa có /v1 ở Client hiện tại (HomePage.tsx & UserLayout.tsx)
 app.use('/api/tours', toursRoute);

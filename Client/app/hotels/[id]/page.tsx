@@ -226,6 +226,7 @@ function HotelDetailContent({
                 title: hotel?.name || 'Khách sạn Natura Travel',
             });
 
+            setBookingSuccess(true);
             router.push(`/checkout?${checkoutParams.toString()}`);
         } finally {
             setIsSubmitting(false);

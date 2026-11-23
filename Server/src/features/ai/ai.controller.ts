@@ -31,7 +31,7 @@ const handleControllerError = (res: Response, error: any, defaultMessage: string
  */
 const generateItinerary = async (req: Request, res: Response) => {
     try {
-        const { budget, days, interests, destination, guests } = req.body;
+        const { budget, days, interests, destination, guests, departure_location, departureLocation } = req.body;
         if (!budget || !days) {
             return res.status(400).json({ status: 'error', message: 'Vui lòng nhập ngân sách (budget) và số ngày (days)' });
         }
@@ -41,6 +41,7 @@ const generateItinerary = async (req: Request, res: Response) => {
             days: Number(days),
             interests: Array.isArray(interests) ? interests : [],
             destination,
+            departure_location: departure_location || departureLocation,
             guests: guests ? Number(guests) : undefined,
         });
 

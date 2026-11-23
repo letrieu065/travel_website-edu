@@ -14,7 +14,9 @@
 
 import React, { useState, useEffect, use, Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { AirlineLogoBadge, getAirlineInfo } from '@/components/common/AirlineBranding';
 import {
     Plane,
     Clock,
@@ -25,7 +27,6 @@ import {
     Luggage,
     Coffee,
     Armchair,
-    Ticket,
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3600';
@@ -166,6 +167,7 @@ function FlightDetailContent({
                 title: `Chuyến bay ${flight?.departure_airport || ''} -> ${flight?.arrival_airport || ''}`,
             });
 
+            setBookingSuccess(true);
             router.push(`/checkout?${checkoutParams.toString()}`);
         } finally {
             setIsSubmitting(false);
@@ -203,8 +205,9 @@ function FlightDetailContent({
         );
     }
 
-    const airlineName = flight.planes?.airline || 'Hãng hàng không';
-    const planeModel = flight.planes?.model || 'Airbus / Boeing';
+    const airlineName = flight.planes?.airline || 'Vietnam Airlines';
+    const airlineInfo = getAirlineInfo(airlineName);
+    const planeModel = flight.planes?.model || airlineInfo.aircraftModel;
     const depTime = formatDateTime(flight.departure_time);
     const arrTime = formatDateTime(flight.arrival_time);
     const duration = calculateDuration(flight.departure_time, flight.arrival_time);
@@ -255,10 +258,15 @@ function FlightDetailContent({
                         <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
                             <div className="bg-black text-white px-6 py-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <Ticket className="w-5 h-5 text-[#FACC15]" />
-                                    <span className="text-xs font-black uppercase tracking-widest">
-                                        Vé Máy Bay Điện Tử
-                                    </span>
+                                    <AirlineLogoBadge airlineName={airlineName} size="sm" />
+                                    <div>
+                                        <span className="text-xs font-black uppercase tracking-widest block text-[#FACC15]">
+                                            Vé Máy Bay Điện Tử
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 font-bold block">
+                                            {airlineInfo.name} · {flight.flight_number}
+                                        </span>
+                                    </div>
                                 </div>
                                 <span className="text-xs font-bold text-gray-300">
                                     Hạng Phổ Thông (Economy)
@@ -332,6 +340,48 @@ function FlightDetailContent({
                                         <span className="text-[11px] font-bold text-gray-400 uppercase block">Cửa ra máy bay</span>
                                         <p className="text-xs font-black text-gray-900 mt-1">Thông báo tại sân bay</p>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Airline & Aircraft Showcase Card */}
+                        <div className="bg-white border border-gray-200 overflow-hidden shadow-sm">
+                            <div className="relative h-64 w-full bg-gray-900">
+                                <Image
+                                    src={airlineInfo.aircraftImage}
+                                    alt={`${airlineInfo.name} - ${planeModel}`}
+                                    fill
+                                    className="object-cover opacity-90"
+                                    sizes="(max-width: 768px) 100vw, 60vw"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                                <div className="absolute bottom-5 left-6 right-6 text-white flex items-end justify-between">
+                                    <div>
+                                        <span className="bg-[#FACC15] text-black px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider inline-block mb-1.5">
+                                            {airlineInfo.slogan}
+                                        </span>
+                                        <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight">
+                                            {airlineInfo.name}
+                                        </h3>
+                                        <p className="text-xs text-gray-200 font-medium mt-0.5">
+                                            Dòng máy bay: <strong className="text-white font-bold">{planeModel}</strong> · Số hiệu chuyến: <strong className="text-white font-bold">{flight.flight_number}</strong>
+                                        </p>
+                                    </div>
+                                    <AirlineLogoBadge airlineName={airlineName} size="lg" className="hidden sm:flex shadow-xl" />
+                                </div>
+                            </div>
+                            <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-gray-700 bg-gray-50/70 border-t border-gray-100">
+                                <div>
+                                    <span className="font-bold text-gray-900 block uppercase text-[10px] tracking-wider">Hạng vé máy bay:</span>
+                                    <span className="text-gray-600 font-medium">Phổ thông tiêu chuẩn (Economy)</span>
+                                </div>
+                                <div>
+                                    <span className="font-bold text-gray-900 block uppercase text-[10px] tracking-wider">Phục vụ trên khoang:</span>
+                                    <span className="text-gray-600 font-medium">Nước tinh khiết & khăn lạnh</span>
+                                </div>
+                                <div>
+                                    <span className="font-bold text-gray-900 block uppercase text-[10px] tracking-wider">Tiêu chuẩn bay:</span>
+                                    <span className="text-gray-600 font-medium">An toàn hàng không nội địa CAAV</span>
                                 </div>
                             </div>
                         </div>
