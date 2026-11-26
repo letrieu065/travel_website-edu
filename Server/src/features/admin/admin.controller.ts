@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import adminService, { ItemType, PaymentStatus } from './admin.service';
+import { AuthRequest } from '../../middleware/auth.middleware';
 
 // (Đã thêm)
 const handleControllerError = (res: Response, error: any, defaultMessage: string = 'Đã có lỗi xảy ra') => {
@@ -108,6 +109,47 @@ const deleteUser = async (req: Request, res: Response) => {
         return res.status(200).json({ status: 'success', message: 'Xóa người dùng thành công' });
     } catch (error) {
         return handleControllerError(res, error, 'Lỗi khi xóa người dùng');
+    }
+};
+
+// (Đã thêm)
+// params: id | body: { newPassword?: string }
+const resetUserPassword = async (req: Request, res: Response) => {
+    try {
+        const id = getParam(req.params.id);
+        const { newPassword, password } = req.body || {};
+        const customPassword = newPassword !== undefined ? newPassword : password;
+        const adminName = (req as AuthRequest).user?.full_name;
+
+        const result = await adminService.resetUserPassword(id, {
+            newPassword: customPassword,
+            adminName,
+        });
+
+        return res.status(200).json({
+            status: 'success',
+            message: `Đã đặt lại mật khẩu và gửi email đến ${result.email}`,
+            data: result,
+        });
+    } catch (error: any) {
+        const msg = error?.message || '';
+        if (msg.includes('Không thể gửi email')) {
+            return res.status(502).json({ status: 'error', message: msg });
+        }
+        if (msg.includes('chưa cấu hình email')) {
+            return res.status(500).json({ status: 'error', message: msg });
+        }
+        if (
+            msg.includes('ID người dùng không hợp lệ') ||
+            msg.includes('Mật khẩu phải có') ||
+            msg.includes('chưa có địa chỉ email')
+        ) {
+            return res.status(400).json({ status: 'error', message: msg });
+        }
+        if (msg.includes('Không tìm thấy người dùng')) {
+            return res.status(404).json({ status: 'error', message: msg });
+        }
+        return handleControllerError(res, error, 'Lỗi khi đặt lại mật khẩu người dùng');
     }
 };
 
@@ -759,7 +801,7 @@ const getTopItems = async (req: Request, res: Response) => {
 
 export default {
     // users
-    getUsers, getUserById, createUser, updateUser, updateUserRole, deleteUser,
+    getUsers, getUserById, createUser, updateUser, updateUserRole, deleteUser, resetUserPassword,
     // tours
     getTours, getTourById, createTour, updateTour, deleteTour, setTourTrending,
     getTourDepartures, createTourDeparture, updateTourDeparture, deleteTourDeparture,

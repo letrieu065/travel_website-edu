@@ -28,6 +28,7 @@ import {
     LogOut,
     FileText,
     RefreshCw,
+    ShieldCheck,
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setProfile, clearProfile } from '@/redux/userSlice';
@@ -282,6 +283,8 @@ export default function UserDetailPage() {
         router.push('/');
     };
 
+    const isAdmin = (reduxUser?.role ?? role)?.trim().toLowerCase() === 'admin';
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center py-20">
@@ -368,7 +371,15 @@ export default function UserDetailPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                        {isAdmin && (
+                            <Link
+                                href="/admin"
+                                className="bg-[#FACC15] text-black hover:bg-yellow-300 py-2.5 px-4 text-xs font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                            >
+                                <ShieldCheck className="w-4 h-4" /> Trang Admin
+                            </Link>
+                        )}
                         <Link
                             href="/bookings"
                             className="bg-black text-[#FACC15] border border-gray-700 hover:border-white py-2.5 px-4 text-xs font-black uppercase tracking-widest transition-colors flex items-center gap-1.5"

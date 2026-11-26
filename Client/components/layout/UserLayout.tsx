@@ -69,7 +69,12 @@ const UserHeader: React.FC = () => {
         const fetchUserProfile = async () => {
             const token = localStorage.getItem('token');
             if (!token) {
-                if (!isCancelled) setLocalUser(null);
+                if (!isCancelled) {
+                    setLocalUser(null);
+                    if (reduxUser) {
+                        dispatch(clearProfile());
+                    }
+                }
                 return;
             }
 
@@ -126,6 +131,7 @@ const UserHeader: React.FC = () => {
 
     const activeUser = reduxUser || localUser;
     const displayName = activeUser?.fullName || activeUser?.full_name || activeUser?.name || 'User';
+    const isAdmin = activeUser?.role?.trim().toLowerCase() === 'admin';
 
     return (
         <header className="header-nav">
@@ -189,6 +195,18 @@ const UserHeader: React.FC = () => {
                     <span className="hidden sm:inline">Cart</span>
                 </button>
 
+                {isAdmin && (
+                    <Link
+                        href="/admin"
+                        className="hidden sm:inline-flex items-center gap-1.5 bg-black text-[#FACC15] hover:bg-gray-800 px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-colors shrink-0 whitespace-nowrap"
+                        title="Chuyển sang trang Quản trị (Admin)"
+                    >
+                        <ShieldCheck className="w-4 h-4 shrink-0" />
+                        <span className="xl:hidden">Admin</span>
+                        <span className="hidden xl:inline">Trang Admin</span>
+                    </Link>
+                )}
+
                 {activeUser ? (
                     <div className="relative ml-2" ref={dropdownRef}>
                         <button
@@ -203,7 +221,7 @@ const UserHeader: React.FC = () => {
 
                         {isDropdownOpen && (
                             <div className="absolute right-0 mt-6 w-48 bg-white border border-gray-100 shadow-xl rounded-md py-2 z-50 flex flex-col dropdown-anim">
-                                {activeUser?.role === 'admin' && (
+                                {isAdmin && (
                                     <>
                                         <button
                                             type="button"
@@ -326,7 +344,7 @@ const UserHeader: React.FC = () => {
                                     <div className="text-xs font-semibold text-gray-500 truncate mb-2">
                                         {displayName}
                                     </div>
-                                    {activeUser.role === 'admin' && (
+                                    {isAdmin && (
                                         <Link
                                             href="/admin"
                                             onClick={() => setIsMobileNavOpen(false)}

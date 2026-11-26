@@ -153,6 +153,18 @@ declare const deleteUser: (id: string) => Promise<{
     google_id: string | null;
     facebook_id: string | null;
 }>;
+declare const generateRandomPassword: (length?: number) => string;
+declare const resetUserPassword: (id: string, options?: {
+    newPassword?: string;
+    adminName?: string;
+}) => Promise<{
+    userId: string;
+    email: string;
+    maskedEmail: string;
+    fullName: string;
+    mode: string;
+    emailSent: boolean;
+}>;
 declare const getTours: (params: PaginationParams & {
     tour_type?: string;
     is_trending?: boolean;
@@ -680,6 +692,8 @@ declare const _default: {
     updateUser: typeof updateUser;
     updateUserRole: typeof updateUserRole;
     deleteUser: typeof deleteUser;
+    resetUserPassword: typeof resetUserPassword;
+    generateRandomPassword: typeof generateRandomPassword;
     getTours: typeof getTours;
     getTourById: typeof getTourById;
     createTour: typeof createTour;

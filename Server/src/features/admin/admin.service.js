@@ -12,8 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const crypto_1 = __importDefault(require("crypto"));
+const nodemailer_1 = __importDefault(require("nodemailer"));
 const prisma_1 = __importDefault(require("../../config/prisma"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const env_1 = __importDefault(require("../../config/env"));
 // (Đã thêm)
 const getPagination = (params) => {
     const page = Math.max(1, Number(params.page) || 1);
@@ -175,6 +178,199 @@ const deleteUser = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return prisma_1.default.users.delete({
         where: { id },
     });
+});
+const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,}$/;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// (Đã thêm)
+const escapeHtml = (value) => {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+// (Đã thêm)
+const maskEmailAddress = (email) => {
+    return email.replace(/(^.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(Math.max(b.length, 3)));
+};
+// (Đã thêm)
+const generateRandomPassword = (length = 12) => {
+    const upperChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lowerChars = 'abcdefghijkmnpqrstuvwxyz';
+    const digitChars = '23456789';
+    const specialChars = '@#$%&*!?';
+    const allChars = upperChars + lowerChars + digitChars + specialChars;
+    const targetLength = Math.max(8, length);
+    const chars = [
+        upperChars[crypto_1.default.randomInt(0, upperChars.length)],
+        lowerChars[crypto_1.default.randomInt(0, lowerChars.length)],
+        digitChars[crypto_1.default.randomInt(0, digitChars.length)],
+        specialChars[crypto_1.default.randomInt(0, specialChars.length)],
+    ];
+    for (let i = chars.length; i < targetLength; i++) {
+        chars.push(allChars[crypto_1.default.randomInt(0, allChars.length)]);
+    }
+    // Fisher-Yates shuffle bằng CSPRNG
+    for (let i = chars.length - 1; i > 0; i--) {
+        const j = crypto_1.default.randomInt(0, i + 1);
+        [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+    return chars.join('');
+};
+// (Đã thêm)
+const sendAdminResetPasswordEmail = (params) => __awaiter(void 0, void 0, void 0, function* () {
+    const gmailUser = process.env.MY_GMAIL || env_1.default.MY_GMAIL;
+    const gmailPass = process.env.GMAIL_APP_PASSWORD || env_1.default.GMAIL_APP_PASSWORD;
+    if (!gmailUser || !gmailPass) {
+        throw new Error('Hệ thống chưa cấu hình email gửi đi (MY_GMAIL / GMAIL_APP_PASSWORD)');
+    }
+    const transporter = nodemailer_1.default.createTransport({
+        service: 'gmail',
+        auth: {
+            user: gmailUser,
+            pass: gmailPass,
+        },
+    });
+    const safeName = escapeHtml(params.fullName || 'Quý khách');
+    const safeEmail = escapeHtml(params.toEmail);
+    const safePassword = escapeHtml(params.newPassword);
+    const safeAdmin = params.adminName ? escapeHtml(params.adminName) : 'Quản trị viên hệ thống';
+    const resetTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+    yield transporter.sendMail({
+        from: `"Natura Travel Support" <${gmailUser}>`,
+        to: params.toEmail,
+        subject: '[Natura Travel] Mật khẩu tài khoản của bạn đã được đặt lại',
+        text: [
+            `Xin chào ${params.fullName || 'Quý khách'},`,
+            '',
+            `Quản trị viên (${params.adminName || 'Hệ thống'}) đã đặt lại mật khẩu cho tài khoản Natura Travel (${params.toEmail}) vào lúc ${resetTime}.`,
+            `Mật khẩu mới của bạn là: ${params.newPassword}`,
+            '',
+            'Vì lý do bảo mật, vui lòng đăng nhập và đổi lại mật khẩu cá nhân ngay sau khi truy cập.',
+            'Trân trọng,',
+            'Natura Travel Support',
+        ].join('\n'),
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 10px; background-color: #ffffff;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="color: #0f141e; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase; margin: 0;">NATURA TRAVEL</h2>
+                    <span style="font-size: 11px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: #b45309;">Thông báo đặt lại mật khẩu</span>
+                </div>
+                <p style="color: #374151; font-size: 14px; line-height: 1.6;">
+                    Xin chào <strong>${safeName}</strong>,
+                </p>
+                <p style="color: #374151; font-size: 14px; line-height: 1.6;">
+                    Quản trị viên (<strong>${safeAdmin}</strong>) đã đặt lại mật khẩu cho tài khoản <strong>${safeEmail}</strong> trên hệ thống <strong>Natura Travel</strong> vào lúc ${escapeHtml(resetTime)}.
+                </p>
+                <div style="text-align: center; margin: 28px 0;">
+                    <p style="color: #6b7280; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Mật khẩu mới của bạn</p>
+                    <div style="display: inline-block; font-family: 'Courier New', Courier, monospace; font-size: 22px; font-weight: 900; letter-spacing: 2px; color: #0f141e; background-color: #FEF08A; padding: 14px 24px; border-radius: 8px; border: 2px dashed #CA8A04;">
+                        ${safePassword}
+                    </div>
+                </div>
+                <p style="color: #4b5563; font-size: 13px; line-height: 1.6; background-color: #f9fafb; padding: 12px 14px; border-left: 3px solid #CA8A04;">
+                    <strong>Lưu ý bảo mật:</strong> Vui lòng sử dụng mật khẩu trên để đăng nhập và đổi sang mật khẩu cá nhân mới trong phần hồ sơ tài khoản ngay sau khi truy cập. Không chia sẻ mật khẩu này với bất kỳ ai.
+                </p>
+                <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 24px 0;" />
+                <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
+                    Đây là email tự động từ hệ thống Natura Travel. &copy; ${new Date().getFullYear()} Natura Travel Ltd. All rights reserved.
+                </p>
+            </div>
+        `,
+    });
+});
+// (Đã thêm)
+const resetUserPassword = (id, options) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!id || !UUID_REGEX.test(id)) {
+        throw new Error('ID người dùng không hợp lệ');
+    }
+    const rawCustomPassword = options === null || options === void 0 ? void 0 : options.newPassword;
+    const hasCustomPassword = rawCustomPassword !== undefined && rawCustomPassword !== null && rawCustomPassword !== '';
+    let plainPassword;
+    if (hasCustomPassword) {
+        if (typeof rawCustomPassword !== 'string' ||
+            /\s/.test(rawCustomPassword) ||
+            !STRONG_PASSWORD_REGEX.test(rawCustomPassword)) {
+            throw new Error('Mật khẩu phải có tối thiểu 8 ký tự, không chứa khoảng trắng, bao gồm ít nhất 1 chữ cái hoa, 1 chữ cái thường, 1 chữ số và 1 ký tự đặc biệt');
+        }
+        plainPassword = rawCustomPassword;
+    }
+    else {
+        plainPassword = generateRandomPassword(12);
+    }
+    const user = yield prisma_1.default.users.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            email: true,
+            full_name: true,
+            password_hash: true,
+            auth_provider: true,
+            role: true,
+        },
+    });
+    if (!user) {
+        throw new Error('Không tìm thấy người dùng');
+    }
+    if (!user.email) {
+        throw new Error('Người dùng chưa có địa chỉ email để gửi mật khẩu mới');
+    }
+    const gmailUser = process.env.MY_GMAIL || env_1.default.MY_GMAIL;
+    const gmailPass = process.env.GMAIL_APP_PASSWORD || env_1.default.GMAIL_APP_PASSWORD;
+    if (!gmailUser || !gmailPass) {
+        throw new Error('Hệ thống chưa cấu hình email gửi đi (MY_GMAIL / GMAIL_APP_PASSWORD)');
+    }
+    const previousPasswordHash = user.password_hash;
+    const newPasswordHash = yield bcrypt_1.default.hash(plainPassword, 10);
+    yield prisma_1.default.users.update({
+        where: { id: user.id },
+        data: { password_hash: newPasswordHash },
+    });
+    try {
+        yield sendAdminResetPasswordEmail({
+            toEmail: user.email,
+            fullName: user.full_name,
+            newPassword: plainPassword,
+            adminName: options === null || options === void 0 ? void 0 : options.adminName,
+        });
+    }
+    catch (mailError) {
+        console.error(`Lỗi gửi email reset mật khẩu tới ${maskEmailAddress(user.email)}:`, mailError);
+        try {
+            yield prisma_1.default.users.update({
+                where: { id: user.id },
+                data: { password_hash: previousPasswordHash },
+            });
+        }
+        catch (rollbackError) {
+            console.error('Lỗi rollback password_hash sau khi gửi mail thất bại:', rollbackError);
+        }
+        throw new Error('Không thể gửi email chứa mật khẩu mới đến người dùng. Mật khẩu cũ vẫn được giữ nguyên.');
+    }
+    try {
+        yield prisma_1.default.notifications.create({
+            data: {
+                user_id: user.id,
+                type: 'system',
+                title: 'Mật khẩu tài khoản đã được đặt lại',
+                message: 'Quản trị viên đã đặt lại mật khẩu tài khoản của bạn và gửi mật khẩu mới qua email đã đăng ký.',
+                is_read: false,
+            },
+        });
+    }
+    catch (notifError) {
+        console.error('Không thể tạo thông báo hệ thống khi admin reset mật khẩu:', notifError);
+    }
+    console.log(`Admin đã reset mật khẩu và gửi email tới ${maskEmailAddress(user.email)}`);
+    return {
+        userId: user.id,
+        email: user.email,
+        maskedEmail: maskEmailAddress(user.email),
+        fullName: user.full_name,
+        mode: hasCustomPassword ? 'custom' : 'auto_generated',
+        emailSent: true,
+    };
 });
 /* ============================== TOURS ============================== */
 const getTours = (params) => __awaiter(void 0, void 0, void 0, function* () {
@@ -904,7 +1100,7 @@ const getTopItems = (params) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.default = {
     // users
-    getUsers, getUserById, createUser, updateUser, updateUserRole, deleteUser,
+    getUsers, getUserById, createUser, updateUser, updateUserRole, deleteUser, resetUserPassword, generateRandomPassword,
     // tours
     getTours, getTourById, createTour, updateTour, deleteTour, setTourTrending,
     getTourDepartures, createTourDeparture, updateTourDeparture, deleteTourDeparture,

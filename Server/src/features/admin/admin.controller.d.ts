@@ -5,6 +5,7 @@ declare const createUser: (req: Request, res: Response) => Promise<Response<any,
 declare const updateUser: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 declare const updateUserRole: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 declare const deleteUser: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+declare const resetUserPassword: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 declare const getTours: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 declare const getTourById: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 declare const createTour: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
@@ -57,6 +58,7 @@ declare const _default: {
     updateUser: typeof updateUser;
     updateUserRole: typeof updateUserRole;
     deleteUser: typeof deleteUser;
+    resetUserPassword: typeof resetUserPassword;
     getTours: typeof getTours;
     getTourById: typeof getTourById;
     createTour: typeof createTour;

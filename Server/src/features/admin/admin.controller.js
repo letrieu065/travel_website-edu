@@ -122,6 +122,44 @@ const deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         return handleControllerError(res, error, 'Lỗi khi xóa người dùng');
     }
 });
+// (Đã thêm)
+// params: id | body: { newPassword?: string }
+const resetUserPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const id = getParam(req.params.id);
+        const { newPassword, password } = req.body || {};
+        const customPassword = newPassword !== undefined ? newPassword : password;
+        const adminName = (_a = req.user) === null || _a === void 0 ? void 0 : _a.full_name;
+        const result = yield admin_service_1.default.resetUserPassword(id, {
+            newPassword: customPassword,
+            adminName,
+        });
+        return res.status(200).json({
+            status: 'success',
+            message: `Đã đặt lại mật khẩu và gửi email đến ${result.email}`,
+            data: result,
+        });
+    }
+    catch (error) {
+        const msg = (error === null || error === void 0 ? void 0 : error.message) || '';
+        if (msg.includes('Không thể gửi email')) {
+            return res.status(502).json({ status: 'error', message: msg });
+        }
+        if (msg.includes('chưa cấu hình email')) {
+            return res.status(500).json({ status: 'error', message: msg });
+        }
+        if (msg.includes('ID người dùng không hợp lệ') ||
+            msg.includes('Mật khẩu phải có') ||
+            msg.includes('chưa có địa chỉ email')) {
+            return res.status(400).json({ status: 'error', message: msg });
+        }
+        if (msg.includes('Không tìm thấy người dùng')) {
+            return res.status(404).json({ status: 'error', message: msg });
+        }
+        return handleControllerError(res, error, 'Lỗi khi đặt lại mật khẩu người dùng');
+    }
+});
 /* ============================== TOURS ============================== */
 // query: page, limit, search, tour_type, is_trending
 const getTours = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -762,7 +800,7 @@ const getTopItems = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 exports.default = {
     // users
-    getUsers, getUserById, createUser, updateUser, updateUserRole, deleteUser,
+    getUsers, getUserById, createUser, updateUser, updateUserRole, deleteUser, resetUserPassword,
     // tours
     getTours, getTourById, createTour, updateTour, deleteTour, setTourTrending,
     getTourDepartures, createTourDeparture, updateTourDeparture, deleteTourDeparture,

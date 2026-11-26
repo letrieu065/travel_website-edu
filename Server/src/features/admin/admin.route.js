@@ -19,6 +19,7 @@ router.get('/users/:id', admin_controller_1.default.getUserById);
 router.post('/users', admin_controller_1.default.createUser);
 router.put('/users/:id', admin_controller_1.default.updateUser);
 router.patch('/users/:id/role', admin_controller_1.default.updateUserRole);
+router.post('/users/:id/reset-password', admin_controller_1.default.resetUserPassword);
 router.delete('/users/:id', admin_controller_1.default.deleteUser);
 router.get('/users/:userId/bookings', admin_controller_1.default.getBookingsByUser);
 /* ============================== TOURS ============================== */
